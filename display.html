@@ -163,17 +163,6 @@
         return a;
       }
 
-
-      // Initialize layer classes
-      topEl.classList.add("top");
-      underEl.classList.add("under");
-
-      function setTopInstant(url) {
-        topEl.src = url;
-        underEl.src = url; // keep it consistent at start
-        currentUrl = url;
-      }
-
       const deckUrls = await loadDeck();
 
       // Ensure Firestore has an order matching deck length (runtime shuffle)
