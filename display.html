@@ -4,77 +4,90 @@
     <meta charset="utf-8" />
     <title>Display Debug</title>
 <style>
-/* Flip stage stays at your target size */
-.flip-stage{
-  width: 680px;
-  height: 488px;
-  display: grid;
-  place-items: center;
-  perspective: 1200px;
-}
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+  }
+  body{
+    display: grid;
+    place-items: center;
+  }
 
-.flip-card{
-  width: 100%;
-  height: 100%;
-  position: relative;
-  transform-style: preserve-3d;
-  transition: transform 420ms cubic-bezier(.2,.8,.2,1);
-}
+  /* Deck viewport: fixed target size */
+  .deck{
+    width: 680px;
+    height: 488px;
+    position: relative;
+    perspective: 1200px;
+  }
 
-.flip-card.is-flipped{
-  transform: rotateY(180deg);
-}
+  .card{
+    position: absolute;
+    inset: 0;
+    margin: auto;
 
-.flip-face{
-  position: absolute;
-  inset: 0;
-  backface-visibility: hidden;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 18px 40px rgba(0,0,0,0.55);
-  border: 1px solid rgba(255,255,255,0.10);
-  display: grid;
-  place-items: center;
-}
+    /* Centered */
+    display: block;
 
-.flip-back{
-  transform: rotateY(180deg);
-  background: #0b0f14;
-}
+    /* Rotation (clockwise) */
+    transform-origin: center;
 
-/* 🔑 IMAGE RULES */
-#card{
-  /* rotate the IMAGE, not the card */
-  transform: rotate(90deg);
-  transform-origin: center;
+    /* shrink-only (rotated => swap limits) */
+    max-width: 488px;
+    max-height: 680px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
 
-  /* shrink-only behavior */
-  max-width: 488px;   /* swapped because rotated */
-  max-height: 680px;
+    /* Visual polish */
+    border-radius: 14px;
+    box-shadow: 0 18px 50px rgba(0,0,0,0.55);
+    will-change: transform, opacity;
+    user-select: none;
+    -webkit-user-drag: none;
 
-  width: auto;
-  height: auto;
+    /* Default: sitting as the deck */
+    transform: rotate(90deg) translateZ(0);
+    opacity: 1;
+  }
 
-  object-fit: contain;
-  display: block;
-}
+  /* The current visible top card */
+  .top{
+    z-index: 2;
+  }
 
+  /* The card underneath (slightly offset for deck feel) */
+  .under{
+    z-index: 1;
+    transform: rotate(90deg) translateY(6px) translateZ(-12px);
+    opacity: 1;
+  }
+
+  /* Animation: top card goes "behind" (down + away + slight shrink) */
+  .send-behind{
+    transition: transform 320ms cubic-bezier(.2,.8,.2,1), opacity 320ms ease;
+    transform: rotate(90deg) translateY(40px) translateZ(-120px) scale(0.96);
+    opacity: 0.98;
+  }
+
+  /* Reduced motion accessibility */
+  @media (prefers-reduced-motion: reduce){
+    .send-behind{ transition: none; }
+  }
 </style>
 
   </head>
   <body>
     <div id="status">Booting…</div>
     <pre id="dump"></pre>
-<div class="flip-stage">
-  <div class="flip-card" id="flip">
-    <div class="flip-face flip-front">
-      <img id="card" alt="">
+    <div class="deck">
+      <img id="cardA" class="card top" alt="">
+      <img id="cardB" class="card" alt="">
     </div>
-    <div class="flip-face flip-back">
-      <div class="back-pattern">PLANECHASE</div>
-    </div>
-  </div>
-</div>
+
 
 
     <script type="module">
@@ -108,24 +121,53 @@
         return a;
       }
 
-      const flipEl = document.getElementById("flip");
-const imgEl = document.getElementById("card");
+  const a = document.getElementById("cardA");
+  const b = document.getElementById("cardB");
 
-let currentUrl = "";
+  let topEl = a;
+  let underEl = b;
+  let currentUrl = "";
 
-function flipToUrl(nextUrl) {
-  if (!nextUrl || nextUrl === currentUrl) return;
+  // Initialize layer classes
+  topEl.classList.add("top");
+  underEl.classList.add("under");
 
-  flipEl.classList.add("is-flipped");
+  function setTopInstant(url){
+    topEl.src = url;
+    underEl.src = url; // keep it consistent at start
+    currentUrl = url;
+  }
 
-  setTimeout(() => {
-    imgEl.onload = () => {
-      flipEl.classList.remove("is-flipped");
-    };
-    imgEl.src = nextUrl;
-    currentUrl = nextUrl;
-  }, 220);
-}
+  function animateTo(url){
+    if (!url || url === currentUrl) return;
+
+    // Put the new card underneath first
+    underEl.src = url;
+
+    // Force layout so class changes animate reliably
+    void topEl.offsetWidth;
+
+    // Animate current top "behind"
+    topEl.classList.add("send-behind");
+
+    // After animation, swap roles (new becomes top)
+    window.setTimeout(() => {
+      // Clean up old top styles
+      topEl.classList.remove("top", "send-behind");
+      topEl.classList.add("under");
+
+      // Promote under to top
+      underEl.classList.remove("under");
+      underEl.classList.add("top");
+
+      // Swap references
+      const tmp = topEl;
+      topEl = underEl;
+      underEl = tmp;
+
+      currentUrl = url;
+    }, 330);
+  }
 
 
       const deck = await loadDeck();
@@ -150,16 +192,30 @@ function flipToUrl(nextUrl) {
       });
 
       // Now just listen + render
-      onSnapshot(roomRef, (snap) => {
-        const data = snap.exists() ? snap.data() : {};
-        const order = Array.isArray(data.order) ? data.order : [];
-        const idx = typeof data.idx === "number" ? data.idx : 0;
+onSnapshot(roomRef, (snap) => {
+  if (!snap.exists()) return;
 
-        const deckIndex = order[idx] ?? 0;
-        const url = deck[deckIndex];
+  const data = snap.data();
 
-        document.getElementById("card").src = url || "";
-      });
+  const deck = Array.isArray(data.deck) ? data.deck : [];
+  const order = Array.isArray(data.order) ? data.order : [];
+  const idx = typeof data.idx === "number" ? data.idx : 0;
+
+  if (!deck.length || !order.length) return;
+
+  const deckIndex = order[idx] ?? 0;
+  const url = deck[deckIndex];
+
+  // 🔑 HERE IS THE IMPORTANT PART
+  if (!currentUrl) {
+    // First card ever shown (page load)
+    setTopInstant(url);
+  } else {
+    // Every subsequent change (Next / Prev)
+    animateTo(url);
+  }
+});
+
     </script>
   </body>
 </html>
