@@ -193,8 +193,8 @@
 }
 
 .btn-nav{
-  min-height: 110px;          /* BIG tap target */
-  font-size: 28px;
+  min-height: 150px;          /* BIG tap target */
+  font-size: 40px;
   font-weight: 800;
   letter-spacing: 1px;
 
@@ -262,7 +262,7 @@
       <div class="title">
         <h1>Planechase Controller</h1>
       </div>
-
+      
       <div class="pill" id="pill">
         <span class="small" id="pos">—</span>
         <span class="small" id="room">room: my-room</span>
@@ -282,7 +282,8 @@
 
       <div class="row">
         <button class="btn-danger" id="reset" aria-label="Reset to first card">⟲ Reset</button>
-        <button id="reshuffle" aria-label="Reshuffle order">🔀 Reshuffle</button>
+        <button id="fs">⛶ Fullscreen</button>
+        <!-- <button id="reshuffle" aria-label="Reshuffle order">🔀 Reshuffle</button> -->
       </div>
 
       <!-- <div class="hint">
@@ -318,6 +319,41 @@
     window.addEventListener("online", updateOnlineStatus);
     window.addEventListener("offline", updateOnlineStatus);
     updateOnlineStatus();
+
+
+const fsBtn = document.getElementById("fs");
+
+async function toggleFullscreen() {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+
+      // Optional: lock orientation (may fail silently)
+      if (screen.orientation && screen.orientation.lock) {
+        try {
+          await screen.orientation.lock(screen.orientation.type);
+        } catch (_) {}
+      }
+
+      fsBtn.textContent = "⛶ Exit Fullscreen";
+    } else {
+      await document.exitFullscreen();
+      fsBtn.textContent = "⛶ Fullscreen";
+    }
+  } catch (e) {
+    console.warn("Fullscreen toggle failed:", e);
+  }
+}
+
+fsBtn.addEventListener("click", toggleFullscreen);
+
+// Keep button label in sync if user exits via gesture
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement) {
+    fsBtn.textContent = "⛶ Fullscreen";
+  }
+});
+
 
     // Live position pill (idx / order length)
     onSnapshot(roomRef, (snap) => {
