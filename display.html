@@ -51,36 +51,34 @@
   transform: translate(-50%, -50%) rotate(90deg) translateX(0);
 }
 
-.top.to-right{
-  transition: transform 1000ms cubic-bezier(.2,.8,.2,1);
-  transform: translate(-50%, -50%) rotate(90deg) translateX(500px);
-}
-
-.top.to-left-under{
+/* Under card (bottom) parked at center under the deck (no transition) */
+.under.park-center-under {
+  transition: none !important;
   z-index: 1;
-  transition: transform 1000ms cubic-bezier(.2,.8,.2,1);
-  transform: translate(-50%, -50%) rotate(90deg) translateX(-740px) translateZ(-120px) scale(0.96);
-}
-
-.top.back-to-center-under{
-  z-index: 1;
-  transition: transform 1000ms cubic-bezier(.2,.8,.2,1);
   transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(-120px) scale(0.96);
 }
 
-/* Old top card, now underneath, parked off to the right (no transition) */
-.under.park-right {
-  transition: none !important;
+/* Under card slides from center-under -> right-under (transition) */
+.under.under-to-right {
+  transition: transform 260ms cubic-bezier(.2,.8,.2,1);
   z-index: 1;
   transform: translate(-50%, -50%) rotate(90deg) translateX(740px) translateZ(-120px) scale(0.96);
 }
 
-/* Then animate it back to center underneath */
-.under.return-center {
-  transition: transform 320ms cubic-bezier(.2,.8,.2,1);
-  z-index: 1;
-  transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(-120px) scale(0.96);
+/* Promote that card to top at-right (no transition) */
+.top.park-right-top {
+  transition: none !important;
+  z-index: 2;
+  transform: translate(-50%, -50%) rotate(90deg) translateX(740px) translateZ(0);
 }
+
+/* Then slide it back to center ON TOP */
+.top.return-center-top {
+  transition: transform 320ms cubic-bezier(.2,.8,.2,1);
+  z-index: 2;
+  transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(0);
+}
+
 
 
 .under{
@@ -189,6 +187,7 @@ let underEl = document.getElementById("cardUnder");
 
 let currentUrl = "";
 let animating = false;
+let lastIdx = null;
 
 function setInstant(url){
   topEl.src = url;
@@ -211,53 +210,86 @@ function nextFrame(){
   return new Promise((r) => requestAnimationFrame(() => r()));
 }
 
-async function animateTo(nextUrl){
+async function animateTo(nextUrl, delta) {
   if (!nextUrl || nextUrl === currentUrl || animating) return;
   animating = true;
 
-  // Put NEXT card underneath (revealed when top moves away)
+  // Under always holds the "target" card we want to reveal eventually
   underEl.src = nextUrl;
 
-  // 1) Slide the current top to the right
+  // 1) Slide current top to the right (shared for both directions)
   topEl.classList.remove("to-right");
   void topEl.offsetWidth;
   topEl.classList.add("to-right");
   await waitTransition(topEl);
 
-  // 2) "Tuck under": swap which element is the top vs under,
-  // but KEEP the old card parked at the right.
   const oldUrl = currentUrl;
   currentUrl = nextUrl;
 
-  // Swap element references so the new card becomes topEl
-  const oldTopEl = topEl;
-  topEl = underEl;
-  underEl = oldTopEl;
+  if (delta > 0) {
+    // ===== NEXT: old top goes to bottom, returns under from right -> center =====
 
-  // Normalize classes
-  topEl.className = "card top";        // new visible top (stays centered)
-  underEl.className = "card under";    // old card will animate underneath
+    // Swap: new card becomes the top (it was underEl)
+    const oldTopEl = topEl;
+    topEl = underEl;
+    underEl = oldTopEl;
 
-  // Put old image on the under element (the one that was slid right)
-  underEl.src = oldUrl;
+    topEl.className = "card top";
+    underEl.className = "card under";
 
-  // IMPORTANT: it is currently at-right because it just finished that animation.
-  // Convert that right-position into an "under parked-right" state *without moving*:
-  underEl.classList.add("park-right");
-  void underEl.offsetWidth;
+    // old card image on moving under element
+    underEl.src = oldUrl;
 
-  // 3) Now animate it from right → center underneath
-  underEl.classList.remove("park-right");
-  underEl.classList.add("return-center");
-  await waitTransition(underEl);
+    // lock it at right-under, then animate back to center-under
+    underEl.classList.add("park-right");
+    void underEl.offsetWidth;
+    underEl.classList.remove("park-right");
+    underEl.classList.add("return-center");
+    await waitTransition(underEl);
 
-  // Cleanup for next time
-  underEl.classList.remove("return-center");
-  underEl.className = "card under";
-  topEl.className = "card top";
+    underEl.classList.remove("return-center");
+    underEl.className = "card under";
+    topEl.className = "card top";
+  } else {
+    // ===== PREV: card comes from bottom to top (reverse) =====
+    // At this moment, topEl is at-right (after .to-right).
+    // We want the previous card (nextUrl) to "come from bottom" to become top.
 
+    // Step A: move the under card (nextUrl) from center-under -> right-under
+    underEl.className = "card under park-center-under";
+    void underEl.offsetWidth;
+    underEl.classList.remove("park-center-under");
+    underEl.classList.add("under-to-right");
+    await waitTransition(underEl);
+
+    // Step B: swap roles so underEl becomes TOP at-right,
+    // and old top becomes UNDER at-right (it stays off to the right)
+    const oldTopEl = topEl;    // contains oldUrl at-right
+    const oldUnderEl = underEl; // contains nextUrl at-right-under
+
+    topEl = oldUnderEl;
+    underEl = oldTopEl;
+
+    // Promote new card to top, parked at-right (no transition), then return to center on top
+    topEl.className = "card top park-right-top";
+    void topEl.offsetWidth;
+    topEl.classList.remove("park-right-top");
+    topEl.classList.add("return-center-top");
+    await waitTransition(topEl);
+
+    topEl.classList.remove("return-center-top");
+    topEl.className = "card top";
+
+    // The old card should end up as the under card centered-under (bottom)
+    underEl.className = "card under";
+    underEl.src = oldUrl; // keep old card underneath ready for future moves
+  }
+
+  // cleanup: remove .to-right from whichever element is now top
+  topEl.classList.remove("to-right");
   animating = false;
 }
+
 
       // Now just listen + render
       onSnapshot(roomRef, (snap) => {
@@ -274,8 +306,18 @@ async function animateTo(nextUrl){
         const deckIndex = order[idx] ?? 0;
         const url = deckUrls[deckIndex];
 
-        if (!currentUrl) setInstant(url);
-        else animateTo(url);
+
+if (!currentUrl) {
+  setInstant(url);
+  lastIdx = newIdx;
+  return;
+}
+
+const delta = (lastIdx === null) ? 1 : (newIdx > lastIdx ? 1 : -1);
+lastIdx = newIdx;
+
+animateTo(url, delta);
+
       });
     </script>
   </body>
