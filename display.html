@@ -1,58 +1,98 @@
 <!doctype html>
 <html>
-<head>
-  <meta charset="utf-8" />
-  <title>Display Debug</title>
-  <style>
-    body { font-family: sans-serif; }
-    pre { white-space: pre-wrap; word-break: break-word; }
-    img { max-width: 95vw; max-height: 80vh; display: block; margin-top: 12px; }
-  </style>
-</head>
-<body>
-  <div id="status">Booting…</div>
-  <pre id="dump"></pre>
-  <img id="card" />
+  <head>
+    <meta charset="utf-8" />
+    <title>Display Debug</title>
+    <style>
+      body {
+        font-family: sans-serif;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      img {
+        max-width: 95vw;
+        max-height: 80vh;
+        display: block;
+        margin-top: 12px;
+      }
+      #card {
+        transform: rotate(90deg);
+        transform-origin: center center;
+        max-height: 95vw; /* swapped because rotated */
+        max-width: 95vh;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="status">Booting…</div>
+    <pre id="dump"></pre>
+    <img id="card">
 
-  <script type="module">
-    import { db, doc, onSnapshot } from "./common.js";
+    <script type="module">
+      import {
+        db,
+        doc,
+        onSnapshot,
+        setDoc,
+        runTransaction,
+        serverTimestamp,
+      } from "./common.js";
 
-    const roomId = "my-room";
-    const roomRef = doc(db, "rooms", roomId);
+      const roomRef = doc(db, "rooms", "my-room");
 
-    const status = document.getElementById("status");
-    const dump = document.getElementById("dump");
-    const img = document.getElementById("card");
+      async function loadDeck() {
+        const res = await fetch("./deck.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to load deck.json");
+        const data = await res.json();
+        return Array.isArray(data.deck) ? data.deck : [];
+      }
 
-    status.textContent = "Connecting to rooms/" + roomId + " …";
-
-    onSnapshot(roomRef,
-      (snap) => {
-        if (!snap.exists()) {
-          status.textContent = "Doc not found: rooms/" + roomId;
-          dump.textContent = "";
-          return;
+      function shuffledIndices(n) {
+        const a = [];
+        for (let i = 0; i < n; i++) a.push(i);
+        for (let i = n - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const tmp = a[i];
+          a[i] = a[j];
+          a[j] = tmp;
         }
+        return a;
+      }
 
-        const data = snap.data();
-        status.textContent = "Connected. idx=" + data.idx;
+      const deck = await loadDeck();
 
-        dump.textContent = JSON.stringify(data, null, 2);
+      // Ensure Firestore has an order matching deck length (runtime shuffle)
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(roomRef);
+        const existing = snap.exists() ? snap.data() : {};
+        const order = Array.isArray(existing.order) ? existing.order : [];
 
-        const deck = Array.isArray(data.deck) ? data.deck : [];
+        if (order.length !== deck.length) {
+          tx.set(
+            roomRef,
+            {
+              order: shuffledIndices(deck.length),
+              idx: 0,
+              shuffledAt: serverTimestamp(),
+            },
+            { merge: true },
+          );
+        }
+      });
+
+      // Now just listen + render
+      onSnapshot(roomRef, (snap) => {
+        const data = snap.exists() ? snap.data() : {};
         const order = Array.isArray(data.order) ? data.order : [];
         const idx = typeof data.idx === "number" ? data.idx : 0;
 
-        if (deck.length && order.length) {
-          const deckIndex = order[idx] ?? 0;
-          img.src = deck[deckIndex] ?? "";
-        }
-      },
-      (err) => {
-        status.textContent = "Snapshot error: " + err.message;
-        dump.textContent = "";
-      }
-    );
-  </script>
-</body>
+        const deckIndex = order[idx] ?? 0;
+        const url = deck[deckIndex];
+
+        document.getElementById("card").src = url || "";
+      });
+    </script>
+  </body>
 </html>
