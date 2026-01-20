@@ -1,34 +1,37 @@
 <!doctype html>
 <html>
-<head>
-  <meta charset="utf-8" />
-  <title>Controller</title>
-</head>
+<head><meta charset="utf-8" /><title>Controller Debug</title></head>
 <body>
+  <div id="status">Ready</div>
   <button id="prev">Prev</button>
   <button id="next">Next</button>
 
   <script type="module">
-    import { db, doc, setDoc } from "./common.js";
+    import { db, doc, runTransaction } from "./common.js";
 
     const roomId = "my-room";
     const roomRef = doc(db, "rooms", roomId);
+    const status = document.getElementById("status");
 
-    let idx = 0;
-
-    async function writeIdx() {
-      await setDoc(roomRef, { idx }, { merge: true });
+    async function step(delta) {
+      try {
+        await runTransaction(db, async (tx) => {
+          const snap = await tx.get(roomRef);
+          const data = snap.exists() ? snap.data() : {};
+          const order = Array.isArray(data.order) ? data.order : [];
+          const max = Math.max(0, order.length - 1);
+          const idx = typeof data.idx === "number" ? data.idx : 0;
+          const nextIdx = Math.min(max, Math.max(0, idx + delta));
+          tx.set(roomRef, { idx: nextIdx }, { merge: true });
+        });
+        status.textContent = "Wrote idx change (" + delta + ")";
+      } catch (e) {
+        status.textContent = "Write error: " + e.message;
+      }
     }
 
-    document.getElementById("prev").onclick = async () => {
-      idx = Math.max(0, idx - 1);
-      await writeIdx();
-    };
-
-    document.getElementById("next").onclick = async () => {
-      idx = idx + 1;
-      await writeIdx();
-    };
+    document.getElementById("prev").onclick = () => step(-1);
+    document.getElementById("next").onclick = () => step(1);
   </script>
 </body>
 </html>
