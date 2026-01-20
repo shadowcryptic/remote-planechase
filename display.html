@@ -159,8 +159,8 @@
         return a;
       }
 
-      const topEl = document.getElementById("cardTop");
-const underEl = document.getElementById("cardUnder");
+let topEl = document.getElementById("cardTop");
+let underEl = document.getElementById("cardUnder");
 
       let deckUrls = [];
       let currentUrl = "";
@@ -173,6 +173,18 @@ const underEl = document.getElementById("cardUnder");
   currentUrl = url;
 }
 
+function normalizeRoles() {
+  topEl.className = "card top";
+  underEl.className = "card under";
+}
+
+function setInstant(url) {
+  topEl.src = url;
+  underEl.src = url;
+  currentUrl = url;
+  normalizeRoles();
+}
+
 function waitTransition(el) {
   return new Promise((resolve) => {
     const onEnd = (e) => {
@@ -180,13 +192,13 @@ function waitTransition(el) {
       el.removeEventListener("transitionend", onEnd);
       resolve();
     };
-    el.addEventListener("transitionend", onEnd, { once: false });
+    el.addEventListener("transitionend", onEnd);
 
-    // Safety: if transitions are disabled or don't fire, resolve anyway
+    // Safety timeout (in case transitionend doesn't fire)
     window.setTimeout(() => {
       el.removeEventListener("transitionend", onEnd);
       resolve();
-    }, 450);
+    }, 500);
   });
 }
 
@@ -203,60 +215,73 @@ async function animateTo(nextUrl, delta) {
   const oldUrl = currentUrl;
   currentUrl = nextUrl;
 
-  resetClasses();
+  normalizeRoles();
 
   if (delta > 0) {
-    // ========= NEXT =========
-    // Under shows next card (revealed when top moves away)
+    // =========================
+    // NEXT: top card goes to bottom
+    // New top should NEVER move.
+    // =========================
+
+    // Put next card underneath (revealed when top slides away)
     underEl.src = nextUrl;
 
-    // Move current top out to the right
+    // Slide current top to the right
     void topEl.offsetWidth;
-    topEl.classList.add("next-out");
+    topEl.classList.add("to-right");
     await waitTransition(topEl);
 
-    // At right edge: top becomes under (instant), and the "resting top image" becomes nextUrl
-    topEl.className = "card under next-park-right";
-    topEl.src = oldUrl;          // the card being put on the bottom
+    // Swap element references so the new top is now topEl (and stays perfectly still)
+    const oldTopEl = topEl;
+    topEl = underEl;
+    underEl = oldTopEl;
 
-    underEl.className = "card top";
-    // underEl already has nextUrl and stays centered as the new top
-
-    // Return the old card from right -> center underneath
-    void topEl.offsetWidth;
-    topEl.classList.remove("next-park-right");
-    topEl.classList.add("next-return");
-    await waitTransition(topEl);
-
-    // Restore standard resting roles:
-    // topEl should be the resting top element, so swap srcs back into our fixed IDs
+    // New top is already centered; keep it as top (no movement)
     topEl.className = "card top";
-    underEl.className = "card under";
 
-    topEl.src = nextUrl;
+    // Old card becomes under, parked at-right-under, then returns under to center
+    underEl.className = "card under park-right";
     underEl.src = oldUrl;
+
+    void underEl.offsetWidth;
+    underEl.classList.remove("park-right");
+    underEl.classList.add("return-center");
+    await waitTransition(underEl);
+
+    underEl.className = "card under";
   } else {
-    // ========= PREV =========
-    // Top stays still. Under card becomes the incoming previous card.
+    // =========================
+    // PREV: current top does NOT move.
+    // Only previous card comes up from bottom onto top.
+    // =========================
+
+    // Prepare the previous card underneath
     underEl.src = nextUrl;
 
-    // Slide under out to the right (still underneath)
+    // Under card slides out to right (still underneath)
     void underEl.offsetWidth;
-    underEl.classList.add("prev-under-to-right");
+    underEl.classList.add("under-to-right");
     await waitTransition(underEl);
 
-    // Promote to top at-right instantly, then return to center on top
-    underEl.className = "card prev-park-right-top";
+    // Promote under card to top at-right instantly, then slide back to center on top
+    underEl.className = "card top park-right-top";
     void underEl.offsetWidth;
 
-    underEl.className = "card prev-return-center-top";
+    underEl.classList.remove("park-right-top");
+    underEl.classList.add("return-center-top");
     await waitTransition(underEl);
 
-    // Now commit the result into our fixed resting elements:
-    // top becomes nextUrl, under becomes oldUrl, and under element resets underneath.
-    resetClasses();
-    topEl.src = nextUrl;
+    // Swap references AFTER the animation so the new top remains the same element
+    const oldTopEl = topEl;
+    topEl = underEl;
+    underEl = oldTopEl;
+
+    // Demote the old top to under (it’s hidden beneath the new top anyway)
+    underEl.className = "card under";
     underEl.src = oldUrl;
+
+    // Ensure new top is clean
+    topEl.className = "card top";
   }
 
   animating = false;
@@ -306,7 +331,7 @@ async function animateTo(nextUrl, delta) {
 
           statusEl.textContent = "Card: " + idx + " / " + order.length;
 
-          if (!currentUrl) {
+if (!currentUrl) {
   setInstant(url);
   lastIdx = idx;
   return;
@@ -315,13 +340,13 @@ async function animateTo(nextUrl, delta) {
 const deltaRaw = idx - (lastIdx ?? idx);
 lastIdx = idx;
 
-// Big jumps (reset) -> snap
 if (Math.abs(deltaRaw) !== 1) {
-  setInstant(url);
+  setInstant(url); // big jumps (reset) snap, no animation
   return;
 }
 
 animateTo(url, deltaRaw > 0 ? 1 : -1);
+
         },
         (err) => {
           statusEl.textContent = "Snapshot error: " + err.message;
