@@ -4,31 +4,40 @@
     <meta charset="utf-8" />
     <title>Display Debug</title>
     <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: black; /* looks nice on a monitor */
+        overflow: hidden;
+      }
+
       body {
-        font-family: sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
-      pre {
-        white-space: pre-wrap;
-        word-break: break-word;
-      }
-      img {
-        max-width: 95vw;
-        max-height: 80vh;
-        display: block;
-        margin-top: 12px;
-      }
+
       #card {
         transform: rotate(90deg);
         transform-origin: center center;
-        max-height: 95vw; /* swapped because rotated */
-        max-width: 95vh;
+
+        /* Scale to fit screen */
+        max-width: 100vh;
+        max-height: 100vw;
+
+        width: auto;
+        height: auto;
+
+        object-fit: contain;
       }
     </style>
   </head>
   <body>
     <div id="status">Booting…</div>
     <pre id="dump"></pre>
-    <img id="card">
+    <img id="card" alt="">
 
     <script type="module">
       import {
