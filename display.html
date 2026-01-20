@@ -1,407 +1,107 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Planechase Controller</title>
-
-  <style>
-    :root{
-      --bg: #0b0f14;
-      --card: rgba(255,255,255,0.06);
-      --card2: rgba(255,255,255,0.08);
-      --text: rgba(255,255,255,0.92);
-      --muted: rgba(255,255,255,0.65);
-      --border: rgba(255,255,255,0.10);
-      --shadow: 0 12px 40px rgba(0,0,0,0.45);
-      --radius: 18px;
-
-      --accent: #7dd3fc;   /* light cyan */
-      --accent2: #a78bfa;  /* soft purple */
-      --danger: #fb7185;   /* pink-red */
-    }
-
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body{
-      margin: 0;
-      background: radial-gradient(1200px 900px at 10% 0%, rgba(125,211,252,0.20), transparent 55%),
-                  radial-gradient(1200px 900px at 90% 10%, rgba(167,139,250,0.18), transparent 55%),
-                  var(--bg);
-      color: var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-
-      /* iPhone safe areas */
-      padding: env(safe-area-inset-top) env(safe-area-inset-right)
-               env(safe-area-inset-bottom) env(safe-area-inset-left);
-    }
-
-    .wrap{
-      min-height: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      padding: 16px;
-    }
-
-    header{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 4px 16px;
-      border: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.04));
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
-    }
-
-    .title{
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      line-height: 1.1;
-    }
-    .title h1{
-      margin: 0;
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 0.2px;
-    }
-    .title .sub{
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .pill{
-      font-variant-numeric: tabular-nums;
-      padding: 10px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: rgba(0,0,0,0.25);
-      color: var(--text);
-      min-width: 112px;
-      text-align: center;
-    }
-    .pill .big{
-      font-size: 14px;
-      font-weight: 700;
-      display: block;
-    }
-    .pill .small{
-      font-size: 11px;
-      color: var(--muted);
-      display: block;
-      margin-top: 2px;
-    }
-
-    .panel{
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.05);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 14px;
-      backdrop-filter: blur(10px);
-    }
-
-    .grid{
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    button{
-      appearance: none;
-      border: 1px solid rgba(255,255,255,0.14);
-      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05));
-      color: var(--text);
-      border-radius: 16px;
-      padding: 18px 14px;
-      font-size: 18px;
-      font-weight: 700;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.35);
-      transition: transform 0.05s ease, filter 0.15s ease, border-color 0.15s ease;
-      width: 100%;
-      min-height: 64px; /* thumb-friendly */
-      touch-action: manipulation;
-    }
-
-    button:active{
-      transform: translateY(1px) scale(0.99);
-      filter: brightness(1.05);
-    }
-
-    .btn-primary{
-      border-color: rgba(125,211,252,0.35);
-      background: linear-gradient(180deg, rgba(125,211,252,0.22), rgba(255,255,255,0.06));
-    }
-
-    .btn-secondary{
-      border-color: rgba(167,139,250,0.35);
-      background: linear-gradient(180deg, rgba(167,139,250,0.20), rgba(255,255,255,0.06));
-    }
-
-    .btn-danger{
-      border-color: rgba(251,113,133,0.45);
-      background: linear-gradient(180deg, rgba(251,113,133,0.20), rgba(255,255,255,0.06));
-    }
-
-    .row{
-      display: flex;
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    .row button{
-      min-height: 58px;
-      font-size: 16px;
-      font-weight: 700;
-      padding: 14px 12px;
-    }
-
-    .hint{
-      margin-top: 12px;
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.35;
-    }
-
-    .statusline{
-      margin-top: 10px;
-      font-size: 12px;
-      color: var(--muted);
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    /* Landscape: make buttons wider and reduce vertical padding */
-    @media (orientation: landscape){
-      .wrap{ padding: 12px; gap: 10px; }
-      header{ padding: 12px; }
-      button{ min-height: 58px; padding: 14px 12px; }
-      .panel{ padding: 12px; }
-      .title h1{ font-size: 17px; }
-    }
-    /* === Primary navigation buttons === */
-
-.main-controls{
-  gap: 16px;
-}
-
-.btn-nav{
-  min-height: 110px;          /* BIG tap target */
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: 1px;
-
-  border-radius: 22px;
-  border-width: 2px;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  line-height: 1.1;
-
-  box-shadow:
-    0 18px 40px rgba(0,0,0,0.55),
-    inset 0 0 0 1px rgba(255,255,255,0.12);
-}
-
-.btn-nav span{
-  font-size: 30px;
-}
-
-/* PREV — cooler tone */
-.btn-prev{
-  border-color: rgba(167,139,250,0.7);
-  background: linear-gradient(
-    180deg,
-    rgba(167,139,250,0.40),
-    rgba(255,255,255,0.10)
-  );
-}
-
-/* NEXT — brightest + most prominent */
-.btn-next{
-  border-color: rgba(125,211,252,0.9);
-  background: linear-gradient(
-    180deg,
-    rgba(125,211,252,0.55),
-    rgba(255,255,255,0.12)
-  );
-}
-
-/* Stronger press feedback */
-.btn-nav:active{
-  transform: translateY(2px) scale(0.985);
-  filter: brightness(1.15);
-}
-
-/* Landscape tweaks */
-@media (orientation: landscape){
-  .btn-nav{
-    min-height: 90px;
-    font-size: 24px;
-  }
-  .btn-nav span{
-    font-size: 26px;
-  }
-}
-
-  </style>
-</head>
-
-<body>
-  <div class="wrap">
-    <!-- <header>
-      <div class="title">
-        <h1>Planechase Controller</h1>
-      </div>
-
-      <div class="pill" id="pill">
-        <span class="small" id="pos">—</span>
-        <span class="small" id="room">room: my-room</span>
-      </div>
-    </header> -->
-
-    <div class="panel">
-      <div class="grid main-controls">
-        <button class="btn-nav btn-prev" id="prev" aria-label="Previous card">
-          <span>PREV</span>◀
-        </button>
-
-        <button class="btn-nav btn-next" id="next" aria-label="Next card">
-          <span>NEXT<br>▶
-        </button>
-      </div>
-
-      <div class="row">
-        <button class="btn-danger" id="reset" aria-label="Reset to first card">⟲ Reset</button>
-        <button id="reshuffle" aria-label="Reshuffle order">🔀 Reshuffle</button>
-      </div>
-
-      <!-- <div class="hint">
-        Tip: If you rotate your phone, the layout adapts. Reset goes to the start of the current shuffled order.
-        Reshuffle asks the display session to reshuffle (it clears <code>order</code> and sets <code>idx</code> to 0).
-      </div> -->
-
-      <div class="statusline">
-        <span id="status">Status: ready</span>
-        <span id="net"></span>
-      </div>
-    </div>
-  </div>
-
-  <script type="module">
-    import { db, doc, runTransaction, onSnapshot } from "./common.js";
-
-    const roomId = "my-room";
-    const roomRef = doc(db, "rooms", roomId);
-
-    const statusEl = document.getElementById("status");
-    const posEl = document.getElementById("pos");
-    const netEl = document.getElementById("net");
-    document.getElementById("room").textContent = "room: " + roomId;
-
-    function setStatus(text) {
-      statusEl.textContent = "Status: " + text;
-    }
-
-    function updateOnlineStatus(){
-      netEl.textContent = navigator.onLine ? "Online" : "Offline";
-    }
-    window.addEventListener("online", updateOnlineStatus);
-    window.addEventListener("offline", updateOnlineStatus);
-    updateOnlineStatus();
-
-    // Live position pill (idx / order length)
-    onSnapshot(roomRef, (snap) => {
-      if (!snap.exists()) {
-        posEl.textContent = "—";
-        setStatus("room not found");
-        return;
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Display Debug</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: black; /* looks nice on a monitor */
+        overflow: hidden;
       }
-      const data = snap.data();
-      const idx = typeof data.idx === "number" ? data.idx : 0;
-      const order = Array.isArray(data.order) ? data.order : [];
-      if (order.length > 0) {
-        posEl.textContent = (idx + 1) + " / " + order.length;
-      } else {
-        posEl.textContent = (idx + 1) + " / ?";
+
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
-      setStatus("synced");
-    }, (err) => {
-      setStatus(err.message);
-    });
 
-    async function step(delta) {
-      setStatus("sending…");
-      try {
-        await runTransaction(db, async (tx) => {
-          const snap = await tx.get(roomRef);
-          if (!snap.exists()) return;
+      #card {
+        transform: rotate(90deg);
+        transform-origin: center center;
 
-          const data = snap.data();
-          const order = Array.isArray(data.order) ? data.order : [];
-          const max = Math.max(0, order.length - 1);
-          const idx = typeof data.idx === "number" ? data.idx : 0;
+        /* Scale to fit screen */
+        max-width: 100vh;
+        max-height: 100vw;
 
-          const nextIdx = Math.min(max, Math.max(0, idx + delta));
-          tx.set(roomRef, { idx: nextIdx }, { merge: true });
-        });
-        setStatus("synced");
-      } catch (e) {
-        setStatus("error: " + e.message);
+        width: auto;
+        height: auto;
+
+        object-fit: contain;
       }
-    }
+    </style>
+  </head>
+  <body>
+    <div id="status">Booting…</div>
+    <pre id="dump"></pre>
+    <img id="card" alt="">
 
-    async function reset() {
-      setStatus("resetting…");
-      try {
-        await runTransaction(db, async (tx) => {
-          const snap = await tx.get(roomRef);
-          if (!snap.exists()) return;
-          tx.set(roomRef, { idx: 0 }, { merge: true });
-        });
-        setStatus("synced");
-      } catch (e) {
-        setStatus("error: " + e.message);
+    <script type="module">
+      import {
+        db,
+        doc,
+        onSnapshot,
+        setDoc,
+        runTransaction,
+        serverTimestamp,
+      } from "./common.js";
+
+      const roomRef = doc(db, "rooms", "my-room");
+
+      async function loadDeck() {
+        const res = await fetch("./deck.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to load deck.json");
+        const data = await res.json();
+        return Array.isArray(data.deck) ? data.deck : [];
       }
-    }
 
-    // This asks the display side to reshuffle by clearing the order.
-    // Your display page already has logic to regenerate order when it sees mismatch/empty.
-    async function reshuffle() {
-      setStatus("reshuffling…");
-      try {
-        await runTransaction(db, async (tx) => {
-          const snap = await tx.get(roomRef);
-          if (!snap.exists()) return;
-          tx.set(roomRef, { order: [], idx: 0 }, { merge: true });
-        });
-        setStatus("synced");
-      } catch (e) {
-        setStatus("error: " + e.message);
+      function shuffledIndices(n) {
+        const a = [];
+        for (let i = 0; i < n; i++) a.push(i);
+        for (let i = n - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const tmp = a[i];
+          a[i] = a[j];
+          a[j] = tmp;
+        }
+        return a;
       }
-    }
 
-    // Big buttons
-    document.getElementById("prev").addEventListener("click", () => step(-1));
-    document.getElementById("next").addEventListener("click", () => step(1));
-    document.getElementById("reset").addEventListener("click", () => reset());
-    document.getElementById("reshuffle").addEventListener("click", () => reshuffle());
+      const deck = await loadDeck();
 
-    // Optional: hardware keyboard support (nice on desktop)
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowLeft") step(-1);
-      if (e.key === "ArrowRight") step(1);
-      if (e.key === "Home") reset();
-    });
-  </script>
-</body>
+      // Ensure Firestore has an order matching deck length (runtime shuffle)
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(roomRef);
+        const existing = snap.exists() ? snap.data() : {};
+        const order = Array.isArray(existing.order) ? existing.order : [];
+
+        if (order.length !== deck.length) {
+          tx.set(
+            roomRef,
+            {
+              order: shuffledIndices(deck.length),
+              idx: 0,
+              shuffledAt: serverTimestamp(),
+            },
+            { merge: true },
+          );
+        }
+      });
+
+      // Now just listen + render
+      onSnapshot(roomRef, (snap) => {
+        const data = snap.exists() ? snap.data() : {};
+        const order = Array.isArray(data.order) ? data.order : [];
+        const idx = typeof data.idx === "number" ? data.idx : 0;
+
+        const deckIndex = order[idx] ?? 0;
+        const url = deck[deckIndex];
+
+        document.getElementById("card").src = url || "";
+      });
+    </script>
+  </body>
 </html>
