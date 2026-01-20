@@ -288,14 +288,9 @@
         const url = deckUrls[deckIndex];
 
 
-        // 🔑 HERE IS THE IMPORTANT PART
-        if (!currentUrl) {
-          // First card ever shown (page load)
-          setTopInstant(url);
-        } else {
-          // Every subsequent change (Next / Prev)
-          animateTo(url);
-        }
+if (!currentUrl) setInstant(url);
+else animateTo(url);
+
       });
 
       
