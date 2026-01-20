@@ -4,37 +4,78 @@
     <meta charset="utf-8" />
     <title>Display Debug</title>
 <style>
-  html, body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    background: black;
-    overflow: hidden;
-  }
+/* Flip stage stays at your target size */
+.flip-stage{
+  width: 680px;
+  height: 488px;
+  display: grid;
+  place-items: center;
+  perspective: 1200px;
+}
 
-  body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+.flip-card{
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 420ms cubic-bezier(.2,.8,.2,1);
+}
 
-#card {
+.flip-card.is-flipped{
+  transform: rotateY(180deg);
+}
+
+.flip-face{
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.10);
+  display: grid;
+  place-items: center;
+}
+
+.flip-back{
+  transform: rotateY(180deg);
+  background: #0b0f14;
+}
+
+/* 🔑 IMAGE RULES */
+#card{
+  /* rotate the IMAGE, not the card */
   transform: rotate(90deg);
   transform-origin: center;
 
-  max-width: 680px;
-  max-height: 480px;
+  /* shrink-only behavior */
+  max-width: 488px;   /* swapped because rotated */
+  max-height: 680px;
 
   width: auto;
   height: auto;
+
+  object-fit: contain;
+  display: block;
 }
+
 </style>
 
   </head>
   <body>
     <div id="status">Booting…</div>
     <pre id="dump"></pre>
-    <img id="card" alt="">
+<div class="flip-stage">
+  <div class="flip-card" id="flip">
+    <div class="flip-face flip-front">
+      <img id="card" alt="">
+    </div>
+    <div class="flip-face flip-back">
+      <div class="back-pattern">PLANECHASE</div>
+    </div>
+  </div>
+</div>
+
 
     <script type="module">
       import {
@@ -66,6 +107,26 @@
         }
         return a;
       }
+
+      const flipEl = document.getElementById("flip");
+const imgEl = document.getElementById("card");
+
+let currentUrl = "";
+
+function flipToUrl(nextUrl) {
+  if (!nextUrl || nextUrl === currentUrl) return;
+
+  flipEl.classList.add("is-flipped");
+
+  setTimeout(() => {
+    imgEl.onload = () => {
+      flipEl.classList.remove("is-flipped");
+    };
+    imgEl.src = nextUrl;
+    currentUrl = nextUrl;
+  }, 220);
+}
+
 
       const deck = await loadDeck();
 
