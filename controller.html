@@ -1,0 +1,26 @@
+<script type="module">
+  import "./common.js";
+  import { runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const roomId = "my-room";
+  const { db, doc } = window.firebaseState;
+  const roomRef = doc(db, "rooms", roomId);
+
+  async function step(delta) {
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(roomRef);
+      if (!snap.exists()) return;
+
+      const data = snap.data();
+      const order = Array.isArray(data.order) ? data.order : [];
+      const max = Math.max(0, order.length - 1);
+      const idx = typeof data.idx === "number" ? data.idx : 0;
+
+      const nextIdx = Math.min(max, Math.max(0, idx + delta));
+      tx.set(roomRef, { idx: nextIdx }, { merge: true });
+    });
+  }
+
+  document.getElementById("prev").onclick = () => step(-1);
+  document.getElementById("next").onclick = () => step(1);
+</script>
