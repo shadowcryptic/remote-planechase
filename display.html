@@ -171,7 +171,7 @@
         }, 330);
       }
 
-      const deck = await loadDeck();
+      const deckUrls = await loadDeck();
 
       // Ensure Firestore has an order matching deck length (runtime shuffle)
       await runTransaction(db, async (tx) => {
@@ -179,11 +179,11 @@
         const existing = snap.exists() ? snap.data() : {};
         const order = Array.isArray(existing.order) ? existing.order : [];
 
-        if (order.length !== deck.length) {
+        if (order.length !== deckUrls.length) {
           tx.set(
             roomRef,
             {
-              order: shuffledIndices(deck.length),
+              order: shuffledIndices(deckUrls.length),
               idx: 0,
               shuffledAt: serverTimestamp(),
             },
@@ -202,10 +202,11 @@
         const order = Array.isArray(data.order) ? data.order : [];
         const idx = typeof data.idx === "number" ? data.idx : 0;
 
-        if (!deck.length || !order.length) return;
+        if (!deckUrls.length || !order.length) return;
 
         const deckIndex = order[idx] ?? 0;
-        const url = deck[deckIndex];
+        const url = deckUrls[deckIndex];
+
 
         // 🔑 HERE IS THE IMPORTANT PART
         if (!currentUrl) {
@@ -218,7 +219,6 @@
       });
 
       
-      setTopInstant(url);
     </script>
   </body>
 </html>
