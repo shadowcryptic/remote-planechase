@@ -23,61 +23,56 @@
         position: relative;
       }
 
-      .card {
-        position: absolute;
-        inset: 0;
-        margin: auto;
-        display: block;
+.card{
+  position: absolute;
+  top: 50%;
+  left: 50%;
 
-        /* rotate image */
-        transform-origin: center;
+  /* TRUE visual centering */
+  transform: translate(-50%, -50%) rotate(90deg);
 
-        /* shrink-only (rotated => swap limits) */
-        max-width: 488px;
-        max-height: 680px;
-        width: auto;
-        height: auto;
-        object-fit: contain;
+  /* shrink-only (rotated => swap limits) */
+  max-width: 488px;
+  max-height: 680px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
 
-        border-radius: 14px;
-        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
-        user-select: none;
-        -webkit-user-drag: none;
-        will-change: transform;
-      }
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.55);
+  user-select: none;
+  -webkit-user-drag: none;
+  will-change: transform;
+}
 
-      /* Under card: sits still, revealed when top moves away */
-      .under {
-        z-index: 1;
-        transform: rotate(90deg);
-      }
 
-      /* Top card: animates */
-      .top {
-        z-index: 2;
-        transform: rotate(90deg) translateX(0) translateZ(0);
-      }
+.top{
+  z-index: 2;
+  transform: translate(-50%, -50%) rotate(90deg) translateX(0);
+}
 
-      /* Phase 1: move right (still on top) */
-      .top.to-right {
-        transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
-        transform: rotate(90deg) translateX(740px) translateZ(0);
-      }
+.top.to-right{
+  transition: transform 260ms cubic-bezier(.2,.8,.2,1);
+  transform: translate(-50%, -50%) rotate(90deg) translateX(740px);
+}
 
-      /* Phase 2: come back from right to left UNDER the new card */
-      .top.to-left-under {
-        z-index: 1; /* critical: now it's "bottom of deck" */
-        transition: transform 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
-        transform: rotate(90deg) translateX(-740px) translateZ(-120px)
-          scale(0.96);
-      }
+.top.to-left-under{
+  z-index: 1;
+  transition: transform 360ms cubic-bezier(.2,.8,.2,1);
+  transform: translate(-50%, -50%) rotate(90deg) translateX(-740px) translateZ(-120px) scale(0.96);
+}
 
-      /* Phase 3: slide under-card back to center */
-      .top.back-to-center-under {
-        z-index: 1;
-        transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
-        transform: rotate(90deg) translateX(0) translateZ(-120px) scale(0.96);
-      }
+.top.back-to-center-under{
+  z-index: 1;
+  transition: transform 260ms cubic-bezier(.2,.8,.2,1);
+  transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(-120px) scale(0.96);
+}
+
+.under{
+  z-index: 1;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
 
       @media (prefers-reduced-motion: reduce) {
         .top.to-right,
