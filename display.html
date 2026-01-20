@@ -68,6 +68,21 @@
   transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(-120px) scale(0.96);
 }
 
+/* Old top card, now underneath, parked off to the right (no transition) */
+.under.park-right {
+  transition: none !important;
+  z-index: 1;
+  transform: translate(-50%, -50%) rotate(90deg) translateX(740px) translateZ(-120px) scale(0.96);
+}
+
+/* Then animate it back to center underneath */
+.under.return-center {
+  transition: transform 320ms cubic-bezier(.2,.8,.2,1);
+  z-index: 1;
+  transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(-120px) scale(0.96);
+}
+
+
 .under{
   z-index: 1;
   transform: translate(-50%, -50%) rotate(90deg);
@@ -148,12 +163,6 @@
         return a;
       }
 
-      const a = document.getElementById("cardUnder");
-      const b = document.getElementById("cardTop");
-
-      let topEl = a;
-      let underEl = b;
-      let currentUrl = "";
 
       // Initialize layer classes
       topEl.classList.add("top");
@@ -186,94 +195,80 @@
         }
       });
 
-      let animating = false;
-      let queuedUrl = "";
+let topEl = document.getElementById("cardTop");
+let underEl = document.getElementById("cardUnder");
 
-      function setInstant(url) {
-        topEl.src = url;
-        underEl.src = url;
-        currentUrl = url;
-      }
+let currentUrl = "";
+let animating = false;
 
-      function waitTransition(el) {
-        return new Promise((resolve) => {
-          const onEnd = (e) => {
-            if (e.propertyName !== "transform") return;
-            el.removeEventListener("transitionend", onEnd);
-            resolve();
-          };
-          el.addEventListener("transitionend", onEnd);
-        });
-      }
+function setInstant(url){
+  topEl.src = url;
+  underEl.src = url;
+  currentUrl = url;
+}
 
-      async function animateTo(nextUrl) {
-        if (!nextUrl || nextUrl === currentUrl) return;
+function waitTransition(el){
+  return new Promise((resolve) => {
+    const onEnd = (e) => {
+      if (e.propertyName !== "transform") return;
+      el.removeEventListener("transitionend", onEnd);
+      resolve();
+    };
+    el.addEventListener("transitionend", onEnd);
+  });
+}
 
-        // If user clicks quickly, keep only the latest requested card
-        if (animating) {
-          queuedUrl = nextUrl;
-          return;
-        }
-        animating = true;
+function nextFrame(){
+  return new Promise((r) => requestAnimationFrame(() => r()));
+}
 
-        // 1) Put the NEXT card underneath (revealed when top slides right)
-        underEl.src = nextUrl;
+async function animateTo(nextUrl){
+  if (!nextUrl || nextUrl === currentUrl || animating) return;
+  animating = true;
 
-        // Ensure we start from a clean class state
-        topEl.classList.remove(
-          "to-right",
-          "to-left-under",
-          "back-to-center-under",
-        );
+  // Put NEXT card underneath (revealed when top moves away)
+  underEl.src = nextUrl;
 
-        // 2) Move top card to the right (still on top)
-        // (force a layout so transition always triggers)
-        void topEl.offsetWidth;
-        topEl.classList.add("to-right");
-        await waitTransition(topEl);
+  // 1) Slide the current top to the right
+  topEl.classList.remove("to-right");
+  void topEl.offsetWidth;
+  topEl.classList.add("to-right");
+  await waitTransition(topEl);
 
-        // 3) Now the physical "tuck under": switch z-index and swap which image is where.
-        // After this moment, the NEW card is the visible top card.
-        const oldUrl = currentUrl;
-        currentUrl = nextUrl;
+  // 2) "Tuck under": swap which element is the top vs under,
+  // but KEEP the old card parked at the right.
+  const oldUrl = currentUrl;
+  currentUrl = nextUrl;
 
-        // Make the new card be the top layer visually:
-        // swap element references so underEl becomes the new top.
-        const oldTop = topEl;
-        topEl = underEl;
-        underEl = oldTop;
+  // Swap element references so the new card becomes topEl
+  const oldTopEl = topEl;
+  topEl = underEl;
+  underEl = oldTopEl;
 
-        // Ensure classes match the new roles
-        topEl.className = "card top"; // new top, stays centered
-        underEl.className = "card under top"; // will animate as the "moving" element underneath
+  // Normalize classes
+  topEl.className = "card top";        // new visible top (stays centered)
+  underEl.className = "card under";    // old card will animate underneath
 
-        // Put the OLD card image on the moving-under element (the one going to bottom)
-        underEl.src = oldUrl;
+  // Put old image on the under element (the one that was slid right)
+  underEl.src = oldUrl;
 
-        // 4) Move that old card back left, but UNDER
-        void underEl.offsetWidth;
-        underEl.classList.add("to-left-under");
-        await waitTransition(underEl);
+  // IMPORTANT: it is currently at-right because it just finished that animation.
+  // Convert that right-position into an "under parked-right" state *without moving*:
+  underEl.classList.add("park-right");
+  void underEl.offsetWidth;
 
-        // 5) Slide it back to center under the deck
-        underEl.classList.remove("to-left-under");
-        void underEl.offsetWidth;
-        underEl.classList.add("back-to-center-under");
-        await waitTransition(underEl);
+  // 3) Now animate it from right → center underneath
+  underEl.classList.remove("park-right");
+  underEl.classList.add("return-center");
+  await waitTransition(underEl);
 
-        // Cleanup: make sure under is calm/ready for next time
-        underEl.className = "card under";
-        topEl.className = "card top";
+  // Cleanup for next time
+  underEl.classList.remove("return-center");
+  underEl.className = "card under";
+  topEl.className = "card top";
 
-        animating = false;
-
-        // If something was queued while animating, run it now
-        if (queuedUrl) {
-          const u = queuedUrl;
-          queuedUrl = "";
-          animateTo(u);
-        }
-      }
+  animating = false;
+}
 
       // Now just listen + render
       onSnapshot(roomRef, (snap) => {
