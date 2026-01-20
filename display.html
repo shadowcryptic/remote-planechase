@@ -2,7 +2,9 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Display Debug</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Planechase Display</title>
+
     <style>
       html,
       body {
@@ -23,122 +25,118 @@
         position: relative;
       }
 
-.card{
-  position: absolute;
-  top: 50%;
-  left: 50%;
+      /* Base card styling + perfect centering */
+      .card {
+        position: absolute;
+        top: 50%;
+        left: 50%;
 
-  /* TRUE visual centering */
-  transform: translate(-50%, -50%) rotate(90deg);
+        /* base transform = centered + rotated */
+        transform: translate(-50%, -50%) rotate(90deg);
 
-  /* shrink-only (rotated => swap limits) */
-  max-width: 488px;
-  max-height: 680px;
-  width: auto;
-  height: auto;
-  object-fit: contain;
+        /* shrink-only (rotated => swap limits) */
+        max-width: 488px;
+        max-height: 680px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
 
-  border-radius: 14px;
-  box-shadow: 0 18px 50px rgba(0,0,0,0.55);
-  user-select: none;
-  -webkit-user-drag: none;
-  will-change: transform;
-}
+        border-radius: 14px;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+        user-select: none;
+        -webkit-user-drag: none;
+        will-change: transform;
+      }
 
+      /* Roles */
+      .top {
+        z-index: 2;
+        transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(0);
+      }
+      .under {
+        z-index: 1;
+        transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(-120px)
+          scale(0.96);
+      }
 
-.top{
-  z-index: 2;
-  transform: translate(-50%, -50%) rotate(90deg) translateX(0);
-}
+      /* Shared: top slides to the right to reveal what's underneath */
+      .top.to-right {
+        transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        transform: translate(-50%, -50%) rotate(90deg) translateX(740px) translateZ(0);
+      }
 
-/* Under card (bottom) parked at center under the deck (no transition) */
-.under.park-center-under {
-  transition: none !important;
-  z-index: 1;
-  transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(-120px) scale(0.96);
-}
+      /* NEXT: old top becomes under, stays parked at-right-under (no transition) */
+      .under.park-right {
+        transition: none !important;
+        transform: translate(-50%, -50%) rotate(90deg) translateX(740px) translateZ(-120px)
+          scale(0.96);
+      }
 
-/* Under card slides from center-under -> right-under (transition) */
-.under.under-to-right {
-  transition: transform 260ms cubic-bezier(.2,.8,.2,1);
-  z-index: 1;
-  transform: translate(-50%, -50%) rotate(90deg) translateX(740px) translateZ(-120px) scale(0.96);
-}
+      /* NEXT: old top returns from right -> center under */
+      .under.return-center {
+        transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(-120px)
+          scale(0.96);
+      }
 
-/* Promote that card to top at-right (no transition) */
-.top.park-right-top {
-  transition: none !important;
-  z-index: 2;
-  transform: translate(-50%, -50%) rotate(90deg) translateX(740px) translateZ(0);
-}
+      /* PREV: the under card (which will become top) moves center-under -> right-under */
+      .under.under-to-right {
+        transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        transform: translate(-50%, -50%) rotate(90deg) translateX(740px) translateZ(-120px)
+          scale(0.96);
+      }
 
-/* Then slide it back to center ON TOP */
-.top.return-center-top {
-  transition: transform 320ms cubic-bezier(.2,.8,.2,1);
-  z-index: 2;
-  transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(0);
-}
+      /* PREV: promote to top at-right instantly */
+      .top.park-right-top {
+        transition: none !important;
+        transform: translate(-50%, -50%) rotate(90deg) translateX(740px) translateZ(0);
+      }
 
+      /* PREV: new top returns right -> center on top */
+      .top.return-center-top {
+        transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(0);
+      }
 
-
-.under{
-  z-index: 1;
-  transform: translate(-50%, -50%) rotate(90deg);
-}
-
-#status, #dump {
-  position: fixed;
-  left: 12px;
-  z-index: 9999;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 12px;
-  color: rgba(255,255,255,0.75);
-  background: rgba(0,0,0,0.35);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 10px;
-  padding: 8px 10px;
-  max-width: min(520px, calc(100vw - 24px));
-}
-
-#status {
-  top: 12px;
-}
-
-#dump {
-  top: 52px;
-  max-height: 40vh;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
+      /* Debug overlay (optional) */
+      #status {
+        position: fixed;
+        left: 12px;
+        top: 12px;
+        z-index: 9999;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.8);
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 10px;
+        padding: 8px 10px;
+      }
 
       @media (prefers-reduced-motion: reduce) {
         .top.to-right,
-        /* .top.to-left-under, */
-        .top.back-to-center-under {
-          transition: none;
+        .under.return-center,
+        .under.under-to-right,
+        .top.return-center-top {
+          transition: none !important;
         }
       }
     </style>
   </head>
+
   <body>
     <div id="status">Booting…</div>
-    <pre id="dump"></pre>
+
     <div class="deck">
       <img id="cardUnder" class="card under" alt="" />
       <img id="cardTop" class="card top" alt="" />
     </div>
 
     <script type="module">
-      import {
-        db,
-        doc,
-        onSnapshot,
-        setDoc,
-        runTransaction,
-        serverTimestamp,
-      } from "./common.js";
+      import { db, doc, onSnapshot, runTransaction, serverTimestamp } from "./common.js";
+
+      const statusEl = document.getElementById("status");
 
       const roomRef = doc(db, "rooms", "my-room");
 
@@ -161,15 +159,115 @@
         return a;
       }
 
-      const deckUrls = await loadDeck();
+      function waitTransition(el) {
+        return new Promise((resolve) => {
+          const onEnd = (e) => {
+            if (e.propertyName !== "transform") return;
+            el.removeEventListener("transitionend", onEnd);
+            resolve();
+          };
+          el.addEventListener("transitionend", onEnd);
+        });
+      }
 
-      // Ensure Firestore has an order matching deck length (runtime shuffle)
+      let topEl = document.getElementById("cardTop");
+      let underEl = document.getElementById("cardUnder");
+
+      let deckUrls = [];
+      let currentUrl = "";
+      let animating = false;
+      let lastIdx = null;
+
+      function setInstant(url) {
+        topEl.src = url;
+        underEl.src = url;
+        currentUrl = url;
+      }
+
+      async function animateTo(nextUrl, delta) {
+        if (!nextUrl || nextUrl === currentUrl || animating) return;
+        animating = true;
+
+        // Ensure clean state
+        topEl.className = "card top";
+        underEl.className = "card under";
+
+        // Under holds the target card
+        underEl.src = nextUrl;
+
+        // 1) Slide current top to the right (reveals under)
+        void topEl.offsetWidth;
+        topEl.classList.add("to-right");
+        await waitTransition(topEl);
+
+        const oldUrl = currentUrl;
+        currentUrl = nextUrl;
+
+        if (delta > 0) {
+          // ===== NEXT: old top goes to bottom =====
+          // Swap elements: new card becomes top
+          const oldTop = topEl;
+          topEl = underEl;
+          underEl = oldTop;
+
+          topEl.className = "card top";
+          underEl.className = "card under";
+
+          // Old card image stays with the moving element
+          underEl.src = oldUrl;
+
+          // It is currently at-right-top (from the first phase); convert to right-under
+          underEl.classList.add("park-right");
+          void underEl.offsetWidth;
+
+          // Return to center underneath
+          underEl.classList.remove("park-right");
+          underEl.classList.add("return-center");
+          await waitTransition(underEl);
+
+          underEl.className = "card under";
+          topEl.className = "card top";
+        } else {
+          // ===== PREV: bring a card from bottom to top =====
+          // Move the under card out to the right (under)
+          underEl.classList.add("under-to-right");
+          await waitTransition(underEl);
+
+          // Swap: under becomes top, old top becomes under
+          const oldTop = topEl;
+          topEl = underEl;
+          underEl = oldTop;
+
+          // New top is at-right-under right now; promote to top at-right, then return to center
+          topEl.className = "card top park-right-top";
+          void topEl.offsetWidth;
+
+          topEl.classList.remove("park-right-top");
+          topEl.classList.add("return-center-top");
+          await waitTransition(topEl);
+
+          topEl.className = "card top";
+
+          // Old card becomes under, centered-under
+          underEl.className = "card under";
+          underEl.src = oldUrl;
+        }
+
+        statusEl.textContent = "idx change: " + (delta > 0 ? "NEXT" : "PREV");
+        animating = false;
+      }
+
+      // Load deck from repo
+      deckUrls = await loadDeck();
+      statusEl.textContent = "Deck loaded: " + deckUrls.length;
+
+      // Ensure Firestore order exists and matches deck length
       await runTransaction(db, async (tx) => {
         const snap = await tx.get(roomRef);
         const existing = snap.exists() ? snap.data() : {};
         const order = Array.isArray(existing.order) ? existing.order : [];
 
-        if (order.length !== deckUrls.length) {
+        if (order.length !== deckUrls.length && deckUrls.length > 0) {
           tx.set(
             roomRef,
             {
@@ -182,143 +280,47 @@
         }
       });
 
-let topEl = document.getElementById("cardTop");
-let underEl = document.getElementById("cardUnder");
+      // Listen for idx/order changes
+      onSnapshot(
+        roomRef,
+        (snap) => {
+          if (!snap.exists()) {
+            statusEl.textContent = "Room doc not found";
+            return;
+          }
 
-let currentUrl = "";
-let animating = false;
-let lastIdx = null;
+          const data = snap.data();
+          const order = Array.isArray(data.order) ? data.order : [];
+          const idx = typeof data.idx === "number" ? data.idx : 0;
 
-function setInstant(url){
-  topEl.src = url;
-  underEl.src = url;
-  currentUrl = url;
-}
+          if (!deckUrls.length || !order.length) return;
 
-function waitTransition(el){
-  return new Promise((resolve) => {
-    const onEnd = (e) => {
-      if (e.propertyName !== "transform") return;
-      el.removeEventListener("transitionend", onEnd);
-      resolve();
-    };
-    el.addEventListener("transitionend", onEnd);
-  });
-}
+          const deckIndex = order[idx] ?? 0;
+          const url = deckUrls[deckIndex];
 
-function nextFrame(){
-  return new Promise((r) => requestAnimationFrame(() => r()));
-}
+          statusEl.textContent = "idx " + idx + " / " + order.length;
 
-async function animateTo(nextUrl, delta) {
-  if (!nextUrl || nextUrl === currentUrl || animating) return;
-  animating = true;
+          if (!currentUrl) {
+            setInstant(url);
+            lastIdx = idx;
+            return;
+          }
 
-  // Under always holds the "target" card we want to reveal eventually
-  underEl.src = nextUrl;
+          // If jump is big (reset), just snap (no animation)
+          const deltaRaw = idx - (lastIdx ?? idx);
+          lastIdx = idx;
 
-  // 1) Slide current top to the right (shared for both directions)
-  topEl.classList.remove("to-right");
-  void topEl.offsetWidth;
-  topEl.classList.add("to-right");
-  await waitTransition(topEl);
+          if (Math.abs(deltaRaw) !== 1) {
+            setInstant(url);
+            return;
+          }
 
-  const oldUrl = currentUrl;
-  currentUrl = nextUrl;
-
-  if (delta > 0) {
-    // ===== NEXT: old top goes to bottom, returns under from right -> center =====
-
-    // Swap: new card becomes the top (it was underEl)
-    const oldTopEl = topEl;
-    topEl = underEl;
-    underEl = oldTopEl;
-
-    topEl.className = "card top";
-    underEl.className = "card under";
-
-    // old card image on moving under element
-    underEl.src = oldUrl;
-
-    // lock it at right-under, then animate back to center-under
-    underEl.classList.add("park-right");
-    void underEl.offsetWidth;
-    underEl.classList.remove("park-right");
-    underEl.classList.add("return-center");
-    await waitTransition(underEl);
-
-    underEl.classList.remove("return-center");
-    underEl.className = "card under";
-    topEl.className = "card top";
-  } else {
-    // ===== PREV: card comes from bottom to top (reverse) =====
-    // At this moment, topEl is at-right (after .to-right).
-    // We want the previous card (nextUrl) to "come from bottom" to become top.
-
-    // Step A: move the under card (nextUrl) from center-under -> right-under
-    underEl.className = "card under park-center-under";
-    void underEl.offsetWidth;
-    underEl.classList.remove("park-center-under");
-    underEl.classList.add("under-to-right");
-    await waitTransition(underEl);
-
-    // Step B: swap roles so underEl becomes TOP at-right,
-    // and old top becomes UNDER at-right (it stays off to the right)
-    const oldTopEl = topEl;    // contains oldUrl at-right
-    const oldUnderEl = underEl; // contains nextUrl at-right-under
-
-    topEl = oldUnderEl;
-    underEl = oldTopEl;
-
-    // Promote new card to top, parked at-right (no transition), then return to center on top
-    topEl.className = "card top park-right-top";
-    void topEl.offsetWidth;
-    topEl.classList.remove("park-right-top");
-    topEl.classList.add("return-center-top");
-    await waitTransition(topEl);
-
-    topEl.classList.remove("return-center-top");
-    topEl.className = "card top";
-
-    // The old card should end up as the under card centered-under (bottom)
-    underEl.className = "card under";
-    underEl.src = oldUrl; // keep old card underneath ready for future moves
-  }
-
-  // cleanup: remove .to-right from whichever element is now top
-  topEl.classList.remove("to-right");
-  animating = false;
-}
-
-
-      // Now just listen + render
-      onSnapshot(roomRef, (snap) => {
-        if (!snap.exists()) return;
-
-        const data = snap.data();
-
-        const deck = Array.isArray(data.deck) ? data.deck : [];
-        const order = Array.isArray(data.order) ? data.order : [];
-        const idx = typeof data.idx === "number" ? data.idx : 0;
-
-        if (!deckUrls.length || !order.length) return;
-
-        const deckIndex = order[idx] ?? 0;
-        const url = deckUrls[deckIndex];
-
-
-if (!currentUrl) {
-  setInstant(url);
-  lastIdx = newIdx;
-  return;
-}
-
-const delta = (lastIdx === null) ? 1 : (newIdx > lastIdx ? 1 : -1);
-lastIdx = newIdx;
-
-animateTo(url, delta);
-
-      });
+          animateTo(url, deltaRaw > 0 ? 1 : -1);
+        },
+        (err) => {
+          statusEl.textContent = "Snapshot error: " + err.message;
+        },
+      );
     </script>
   </body>
 </html>
