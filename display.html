@@ -68,12 +68,12 @@
 /* NEXT: same element becomes under at-right instantly */
 .under.next-park-right {
   transition: none !important;
-  transform: translate(-50%, -50%) rotate(90deg) translateX(0px) translateZ(0px);
+  transform: translate(-50%, -50%) rotate(90deg) translateX(500px) translateZ(0px);
 }
 
 /* NEXT: return under from right -> center */
 .under.next-return {
-  transition: transform 800ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 830ms cubic-bezier(0.2, 0.8, 0.2, 1);
   transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(0px);
 }
 
@@ -87,12 +87,12 @@
 .prev-park-right-top {
   transition: none !important;
   z-index: 3;
-  transform: translate(-50%, -50%) rotate(90deg) translateX(0px) translateZ(0);
+  transform: translate(-50%, -50%) rotate(90deg) translateX(500px) translateZ(0);
 }
 
 /* PREV: return from right -> center on top */
 .prev-return-center-top {
-  transition: transform 800ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 830ms cubic-bezier(0.2, 0.8, 0.2, 1);
   z-index: 3;
   transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(0);
 }
