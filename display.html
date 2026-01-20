@@ -162,8 +162,10 @@
       const topEl = document.getElementById("cardTop");
 const underEl = document.getElementById("cardUnder");
 
-let currentUrl = "";
-let animating = false;
+      let deckUrls = [];
+      let currentUrl = "";
+      let animating = false;
+      let lastIdx = null;
 
       function setInstant(url) {
   topEl.src = url;
