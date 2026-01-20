@@ -171,22 +171,64 @@
         return a;
       }
 
-      function waitTransition(el) {
-        return new Promise((resolve) => {
-          const onEnd = (e) => {
-            if (e.propertyName !== "transform") return;
-            el.removeEventListener("transitionend", onEnd);
-            resolve();
-          };
-          el.addEventListener("transitionend", onEnd);
+function parseTimeListToMs(listStr) {
+  // "0.32s, 120ms" -> [320,120]
+  const parts = listStr.split(",").map((s) => s.trim());
+  const ms = parts.map((p) => {
+    if (p.endsWith("ms")) return Number(p.slice(0, -2));
+    if (p.endsWith("s")) return Number(p.slice(0, -1)) * 1000;
+    return Number(p) || 0;
+  });
+  return ms;
+}
 
-          // safety in case transitionend doesn't fire
-          window.setTimeout(() => {
-            el.removeEventListener("transitionend", onEnd);
-            resolve();
-          }, 600);
-        });
-      }
+function waitTransition(el) {
+  return new Promise((resolve) => {
+    const cs = getComputedStyle(el);
+
+    const durations = parseTimeListToMs(cs.transitionDuration);
+    const delays = parseTimeListToMs(cs.transitionDelay);
+
+    // If multiple transitions are defined, the browser pairs them by index.
+    // Use the max (duration+delay) as the true upper bound.
+    const n = Math.max(durations.length, delays.length, 1);
+    let maxTotal = 0;
+    for (let i = 0; i < n; i++) {
+      const d = durations[i] ?? durations[durations.length - 1] ?? 0;
+      const l = delays[i] ?? delays[delays.length - 1] ?? 0;
+      const total = d + l;
+      if (total > maxTotal) maxTotal = total;
+    }
+
+    // If transitions are effectively off, resolve next tick.
+    if (maxTotal <= 0) {
+      requestAnimationFrame(() => resolve());
+      return;
+    }
+
+    let done = false;
+
+    const onEnd = (e) => {
+      if (done) return;
+      if (e.target !== el) return;
+      if (e.propertyName !== "transform") return;
+      done = true;
+      el.removeEventListener("transitionend", onEnd);
+      clearTimeout(timer);
+      resolve();
+    };
+
+    el.addEventListener("transitionend", onEnd);
+
+    // Safety timeout slightly above actual max duration
+    const timer = setTimeout(() => {
+      if (done) return;
+      done = true;
+      el.removeEventListener("transitionend", onEnd);
+      resolve();
+    }, maxTotal + 80);
+  });
+}
 
       function resetClasses() {
         topImg.className = "card top";
