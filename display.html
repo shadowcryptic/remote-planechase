@@ -3,92 +3,94 @@
   <head>
     <meta charset="utf-8" />
     <title>Display Debug</title>
-<style>
-  html, body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    background: #000;
-    overflow: hidden;
-  }
-  body{
-    display: grid;
-    place-items: center;
-  }
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+      }
+      body {
+        display: grid;
+        place-items: center;
+      }
 
-  /* Deck viewport: fixed target size */
-  .deck{
-    width: 680px;
-    height: 488px;
-    position: relative;
-    perspective: 1200px;
-  }
+      /* Deck viewport: fixed target size */
+      .deck {
+        width: 680px;
+        height: 488px;
+        position: relative;
+        perspective: 1200px;
+      }
 
-  .card{
-    position: absolute;
-    inset: 0;
-    margin: auto;
+      .card {
+        position: absolute;
+        inset: 0;
+        margin: auto;
 
-    /* Centered */
-    display: block;
+        /* Centered */
+        display: block;
 
-    /* Rotation (clockwise) */
-    transform-origin: center;
+        /* Rotation (clockwise) */
+        transform-origin: center;
 
-    /* shrink-only (rotated => swap limits) */
-    max-width: 488px;
-    max-height: 680px;
-    width: auto;
-    height: auto;
-    object-fit: contain;
+        /* shrink-only (rotated => swap limits) */
+        max-width: 488px;
+        max-height: 680px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
 
-    /* Visual polish */
-    border-radius: 14px;
-    box-shadow: 0 18px 50px rgba(0,0,0,0.55);
-    will-change: transform, opacity;
-    user-select: none;
-    -webkit-user-drag: none;
+        /* Visual polish */
+        border-radius: 14px;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+        will-change: transform, opacity;
+        user-select: none;
+        -webkit-user-drag: none;
 
-    /* Default: sitting as the deck */
-    transform: rotate(90deg) translateZ(0);
-    opacity: 1;
-  }
+        /* Default: sitting as the deck */
+        transform: rotate(90deg) translateZ(0);
+        opacity: 1;
+      }
 
-  /* The current visible top card */
-  .top{
-    z-index: 2;
-  }
+      /* The current visible top card */
+      .top {
+        z-index: 2;
+      }
 
-  /* The card underneath (slightly offset for deck feel) */
-  .under{
-    z-index: 1;
-    transform: rotate(90deg) translateY(6px) translateZ(-12px);
-    opacity: 1;
-  }
+      /* The card underneath (slightly offset for deck feel) */
+      .under {
+        z-index: 1;
+        transform: rotate(90deg) translateY(6px) translateZ(-12px);
+        opacity: 1;
+      }
 
-  /* Animation: top card goes "behind" (down + away + slight shrink) */
-  .send-behind{
-    transition: transform 320ms cubic-bezier(.2,.8,.2,1), opacity 320ms ease;
-    transform: rotate(90deg) translateY(40px) translateZ(-120px) scale(0.96);
-    opacity: 0.98;
-  }
+      /* Animation: top card goes "behind" (down + away + slight shrink) */
+      .send-behind {
+        transition:
+          transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          opacity 320ms ease;
+        transform: rotate(90deg) translateY(40px) translateZ(-120px) scale(0.96);
+        opacity: 0.98;
+      }
 
-  /* Reduced motion accessibility */
-  @media (prefers-reduced-motion: reduce){
-    .send-behind{ transition: none; }
-  }
-</style>
-
+      /* Reduced motion accessibility */
+      @media (prefers-reduced-motion: reduce) {
+        .send-behind {
+          transition: none;
+        }
+      }
+    </style>
   </head>
   <body>
     <div id="status">Booting…</div>
     <pre id="dump"></pre>
     <div class="deck">
-      <img id="cardA" class="card top" alt="">
-      <img id="cardB" class="card" alt="">
+      <img id="cardA" class="card top" alt="" />
+      <img id="cardB" class="card" alt="" />
     </div>
-
-
 
     <script type="module">
       import {
@@ -121,54 +123,53 @@
         return a;
       }
 
-  const a = document.getElementById("cardA");
-  const b = document.getElementById("cardB");
+      const a = document.getElementById("cardA");
+      const b = document.getElementById("cardB");
 
-  let topEl = a;
-  let underEl = b;
-  let currentUrl = "";
+      let topEl = a;
+      let underEl = b;
+      let currentUrl = "";
 
-  // Initialize layer classes
-  topEl.classList.add("top");
-  underEl.classList.add("under");
+      // Initialize layer classes
+      topEl.classList.add("top");
+      underEl.classList.add("under");
 
-  function setTopInstant(url){
-    topEl.src = url;
-    underEl.src = url; // keep it consistent at start
-    currentUrl = url;
-  }
+      function setTopInstant(url) {
+        topEl.src = url;
+        underEl.src = url; // keep it consistent at start
+        currentUrl = url;
+      }
 
-  function animateTo(url){
-    if (!url || url === currentUrl) return;
+      function animateTo(url) {
+        if (!url || url === currentUrl) return;
 
-    // Put the new card underneath first
-    underEl.src = url;
+        // Put the new card underneath first
+        underEl.src = url;
 
-    // Force layout so class changes animate reliably
-    void topEl.offsetWidth;
+        // Force layout so class changes animate reliably
+        void topEl.offsetWidth;
 
-    // Animate current top "behind"
-    topEl.classList.add("send-behind");
+        // Animate current top "behind"
+        topEl.classList.add("send-behind");
 
-    // After animation, swap roles (new becomes top)
-    window.setTimeout(() => {
-      // Clean up old top styles
-      topEl.classList.remove("top", "send-behind");
-      topEl.classList.add("under");
+        // After animation, swap roles (new becomes top)
+        window.setTimeout(() => {
+          // Clean up old top styles
+          topEl.classList.remove("top", "send-behind");
+          topEl.classList.add("under");
 
-      // Promote under to top
-      underEl.classList.remove("under");
-      underEl.classList.add("top");
+          // Promote under to top
+          underEl.classList.remove("under");
+          underEl.classList.add("top");
 
-      // Swap references
-      const tmp = topEl;
-      topEl = underEl;
-      underEl = tmp;
+          // Swap references
+          const tmp = topEl;
+          topEl = underEl;
+          underEl = tmp;
 
-      currentUrl = url;
-    }, 330);
-  }
-
+          currentUrl = url;
+        }, 330);
+      }
 
       const deck = await loadDeck();
 
@@ -192,30 +193,32 @@
       });
 
       // Now just listen + render
-onSnapshot(roomRef, (snap) => {
-  if (!snap.exists()) return;
+      onSnapshot(roomRef, (snap) => {
+        if (!snap.exists()) return;
 
-  const data = snap.data();
+        const data = snap.data();
 
-  const deck = Array.isArray(data.deck) ? data.deck : [];
-  const order = Array.isArray(data.order) ? data.order : [];
-  const idx = typeof data.idx === "number" ? data.idx : 0;
+        const deck = Array.isArray(data.deck) ? data.deck : [];
+        const order = Array.isArray(data.order) ? data.order : [];
+        const idx = typeof data.idx === "number" ? data.idx : 0;
 
-  if (!deck.length || !order.length) return;
+        if (!deck.length || !order.length) return;
 
-  const deckIndex = order[idx] ?? 0;
-  const url = deck[deckIndex];
+        const deckIndex = order[idx] ?? 0;
+        const url = deck[deckIndex];
 
-  // 🔑 HERE IS THE IMPORTANT PART
-  if (!currentUrl) {
-    // First card ever shown (page load)
-    setTopInstant(url);
-  } else {
-    // Every subsequent change (Next / Prev)
-    animateTo(url);
-  }
-});
+        // 🔑 HERE IS THE IMPORTANT PART
+        if (!currentUrl) {
+          // First card ever shown (page load)
+          setTopInstant(url);
+        } else {
+          // Every subsequent change (Next / Prev)
+          animateTo(url);
+        }
+      });
 
+      
+      setTopInstant(url);
     </script>
   </body>
 </html>
