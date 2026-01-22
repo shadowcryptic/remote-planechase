@@ -274,8 +274,13 @@ function waitTransition(el) {
 
         // Restore fixed roles by swapping src (prevents flick)
         resetClasses();
+console.log("wait1");
+await delay(1);
 underImg.src = oldUrl;
-        topImg.src = nextUrl;
+console.log("wait2");
+await delay(1);
+topImg.src = nextUrl;
+console.log("wait3");
         
       }
 
