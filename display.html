@@ -143,14 +143,13 @@
       const topImg = document.getElementById("cardTop");
       const underImg = document.getElementById("cardUnder");
       const BACK_URL = "https://backs.scryfall.io/large/7/8/7840c131-f96b-4700-9347-2215c43156e6.jpg";
-  
 
       let deckUrls = [];
       let currentUrl = "";
       let animating = false;
       let lastIdx = null;
       let revealedOnce = false;
-    setInstant(BACK_URL);
+      setInstant(BACK_URL);
 
       function setStatus(text) {
         statusEl.textContent = text;
@@ -341,52 +340,53 @@ function waitTransition(el) {
       });
 
       // Listen for idx changes
-      onSnapshot(
-        roomRef,
-        (snap) => {
-          if (!snap.exists()) {
-            setStatus("Room doc not found");
-            return;
-          }
+onSnapshot(roomRef, (snap) => {
+  if (!snap.exists()) return;
 
-          const data = snap.data();
-          const order = Array.isArray(data.order) ? data.order : [];
-          const idx = typeof data.idx === "number" ? data.idx : 0;
+  const data = snap.data();
+  const order = Array.isArray(data.order) ? data.order : [];
+  const idx = typeof data.idx === "number" ? data.idx : 0;
+  const resetAt = data.resetAt ?? null;
 
-          if (!deckUrls.length || !order.length) return;
+  if (!deckUrls.length || !order.length) return;
 
-          const deckIndex = order[idx] ?? 0;
-          const url = deckUrls[deckIndex];
+  const deckIndex = order[idx] ?? 0;
+  const url = deckUrls[deckIndex];
 
-          setStatus("idx " + idx + " / " + order.length);
+  // 🔴 HARD RESET DETECTED
+  if (resetAt && resetAt !== lastResetAt) {
+    lastResetAt = resetAt;
 
-        if (!revealedOnce) {
-        // We are currently showing the back. Reveal the first real card with the NEXT animation.
-        revealedOnce = true;
+    // Reset local state
+    revealedOnce = false;
+    lastIdx = idx;
+    currentUrl = BACK_URL;
 
-        // Set idx baseline so future delta math works
-        lastIdx = idx;
+    // Immediately show card back
+    setInstant(BACK_URL);
+    return;
+  }
 
-        // Animate "back -> first card" as a NEXT reveal
-        animateTo(url, 1);
-        return;
-        }
+  // 🟢 FIRST REVEAL (after reset or page load)
+  if (!revealedOnce) {
+    revealedOnce = true;
+    lastIdx = idx;
+    animateTo(url, 1); // NEXT-style reveal
+    return;
+  }
 
-          const deltaRaw = idx - (lastIdx ?? idx);
-          lastIdx = idx;
+  // 🟡 NORMAL NAVIGATION
+  const deltaRaw = idx - (lastIdx ?? idx);
+  lastIdx = idx;
 
-          // Big jumps: snap (no animation)
-          if (Math.abs(deltaRaw) !== 1) {
-            setInstant(url);
-            return;
-          }
+  if (Math.abs(deltaRaw) !== 1) {
+    setInstant(url);
+    return;
+  }
 
-          animateTo(url, deltaRaw > 0 ? 1 : -1);
-        },
-        (err) => {
-          setStatus("Snapshot error: " + err.message);
-        },
-      );
+  animateTo(url, deltaRaw > 0 ? 1 : -1);
+});
+
     </script>
   </body>
 </html>
