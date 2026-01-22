@@ -274,8 +274,9 @@ function waitTransition(el) {
 
         // Restore fixed roles by swapping src (prevents flick)
         resetClasses();
+underImg.src = oldUrl;
         topImg.src = nextUrl;
-        underImg.src = oldUrl;
+        
       }
 
       async function animatePrev(prevUrl) {
