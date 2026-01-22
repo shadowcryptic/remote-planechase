@@ -396,19 +396,22 @@ document.addEventListener("fullscreenchange", () => {
       }
     }
 
-    async function reset() {
-      setStatus("resetting…");
-      try {
-        await runTransaction(db, async (tx) => {
-          const snap = await tx.get(roomRef);
-          if (!snap.exists()) return;
-          tx.set(roomRef, { idx: 0 }, { merge: true });
-        });
-        setStatus("synced");
-      } catch (e) {
-        setStatus("error: " + e.message);
-      }
-    }
+async function reset() {
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(roomRef);
+    if (!snap.exists()) return;
+
+    tx.set(
+      roomRef,
+      {
+        idx: 0,
+        resetAt: Date.now(), // 🔑 tell displays this is a real reset
+      },
+      { merge: true }
+    );
+  });
+}
+
 
     // This asks the display side to reshuffle by clearing the order.
     // Your display page already has logic to regenerate order when it sees mismatch/empty.
