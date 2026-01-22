@@ -276,12 +276,13 @@ function waitTransition(el) {
         
 console.log("wait1");
 //await delay(1);
-underImg.src = oldUrl;
+underImg.src = nextUrl;
 console.log("wait2");
 //await delay(1);
 topImg.src = nextUrl;
 console.log("wait3");
 resetClasses();
+underImg.src = oldUrl;
         
       }
 
