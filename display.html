@@ -142,11 +142,14 @@
 
       const topImg = document.getElementById("cardTop");
       const underImg = document.getElementById("cardUnder");
+      const BACK_URL = "https://backs.scryfall.io/large/7/8/7840c131-f96b-4700-9347-2215c43156e6.jpg";
+      setInstant(BACK_URL);
 
       let deckUrls = [];
       let currentUrl = "";
       let animating = false;
       let lastIdx = null;
+      let revealedOnce = false;
 
       function setStatus(text) {
         statusEl.textContent = text;
@@ -356,11 +359,17 @@ function waitTransition(el) {
 
           setStatus("idx " + idx + " / " + order.length);
 
-          if (!currentUrl) {
-            setInstant(url);
-            lastIdx = idx;
-            return;
-          }
+        if (!revealedOnce) {
+        // We are currently showing the back. Reveal the first real card with the NEXT animation.
+        revealedOnce = true;
+
+        // Set idx baseline so future delta math works
+        lastIdx = idx;
+
+        // Animate "back -> first card" as a NEXT reveal
+        animateTo(url, 1);
+        return;
+        }
 
           const deltaRaw = idx - (lastIdx ?? idx);
           lastIdx = idx;
