@@ -283,7 +283,7 @@
       <div class="row">
         <button class="btn-danger" id="reset" aria-label="Reset to first card">⟲ Reset</button>
         <button id="fs">⛶ Fullscreen</button>
-        <!-- <button id="reshuffle" aria-label="Reshuffle order">🔀 Reshuffle</button> -->
+        <button id="reshuffle" aria-label="Reshuffle order">🔀 Reshuffle</button>
       </div>
 
       <!-- <div class="hint">
@@ -384,10 +384,11 @@ document.addEventListener("fullscreenchange", () => {
 
           const data = snap.data();
           const order = Array.isArray(data.order) ? data.order : [];
+          const min = -1;
           const max = Math.max(0, order.length - 1);
           const idx = typeof data.idx === "number" ? data.idx : 0;
 
-          const nextIdx = Math.min(max, Math.max(0, idx + delta));
+          const nextIdx = Math.min(max, Math.max(min, idx + delta));
           tx.set(roomRef, { idx: nextIdx }, { merge: true });
         });
         setStatus("synced");
@@ -402,7 +403,7 @@ document.addEventListener("fullscreenchange", () => {
         await runTransaction(db, async (tx) => {
           const snap = await tx.get(roomRef);
           if (!snap.exists()) return;
-          tx.set(roomRef, { idx: 0 }, { merge: true });
+          tx.set(roomRef, { idx: -1 }, { merge: true });
         });
         setStatus("synced");
       } catch (e) {
@@ -441,3 +442,4 @@ document.addEventListener("fullscreenchange", () => {
   </script>
 </body>
 </html>
+

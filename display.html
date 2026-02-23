@@ -242,6 +242,13 @@ function waitTransition(el) {
         resetClasses();
       }
 
+      function clearCards() {
+        topImg.removeAttribute("src");
+        underImg.removeAttribute("src");
+        currentUrl = "";
+        resetClasses();
+      }
+
       async function animateNext(nextUrl) {
         // NEXT: current top moves right; new top never moves
         const oldUrl = currentUrl;
@@ -350,6 +357,12 @@ function waitTransition(el) {
           const idx = typeof data.idx === "number" ? data.idx : 0;
 
           if (!deckUrls.length || !order.length) return;
+          if (idx < 0) {
+            setStatus("idx " + idx + " / " + order.length);
+            clearCards();
+            lastIdx = idx;
+            return;
+          }
 
           const deckIndex = order[idx] ?? 0;
           const url = deckUrls[deckIndex];
