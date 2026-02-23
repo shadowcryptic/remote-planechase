@@ -147,6 +147,7 @@
       let currentUrl = "";
       let animating = false;
       let lastIdx = null;
+      let repairInFlight = false;
 
       function setStatus(text) {
         statusEl.textContent = text;
@@ -169,6 +170,32 @@
           a[j] = tmp;
         }
         return a;
+      }
+
+      async function ensureOrderMatchesDeck() {
+        if (!deckUrls.length || repairInFlight) return;
+        repairInFlight = true;
+        try {
+          await runTransaction(db, async (tx) => {
+            const snap = await tx.get(roomRef);
+            const existing = snap.exists() ? snap.data() : {};
+            const order = Array.isArray(existing.order) ? existing.order : [];
+
+            if (order.length !== deckUrls.length) {
+              tx.set(
+                roomRef,
+                {
+                  order: shuffledIndices(deckUrls.length),
+                  idx: -1,
+                  shuffledAt: serverTimestamp(),
+                },
+                { merge: true },
+              );
+            }
+          });
+        } finally {
+          repairInFlight = false;
+        }
       }
 
 function parseTimeListToMs(listStr) {
@@ -325,23 +352,7 @@ function waitTransition(el) {
       setStatus("Deck loaded: " + deckUrls.length);
 
       // Ensure order exists and matches deck length
-      await runTransaction(db, async (tx) => {
-        const snap = await tx.get(roomRef);
-        const existing = snap.exists() ? snap.data() : {};
-        const order = Array.isArray(existing.order) ? existing.order : [];
-
-        if (deckUrls.length > 0 && order.length !== deckUrls.length) {
-          tx.set(
-            roomRef,
-            {
-              order: shuffledIndices(deckUrls.length),
-              idx: 0,
-              shuffledAt: serverTimestamp(),
-            },
-            { merge: true },
-          );
-        }
-      });
+      await ensureOrderMatchesDeck();
 
       // Listen for idx changes
       onSnapshot(
@@ -356,7 +367,14 @@ function waitTransition(el) {
           const order = Array.isArray(data.order) ? data.order : [];
           const idx = typeof data.idx === "number" ? data.idx : 0;
 
-          if (!deckUrls.length || !order.length) return;
+          if (!deckUrls.length) return;
+          if (order.length !== deckUrls.length) {
+            setStatus("Repairing order…");
+            ensureOrderMatchesDeck().catch((e) => {
+              setStatus("Order repair error: " + e.message);
+            });
+            return;
+          }
           if (idx < 0) {
             setStatus("idx " + idx + " / " + order.length);
             clearCards();
