@@ -143,6 +143,7 @@
       const topImg = document.getElementById("cardTop");
       const underImg = document.getElementById("cardUnder");
 
+      let lastForceReloadAt = null;
       let deckUrls = [];
       let currentUrl = "";
       let animating = false;
@@ -364,6 +365,16 @@ function waitTransition(el) {
           }
 
           const data = snap.data();
+
+          const forceReloadAt = typeof data.forceReloadAt === "number" ? data.forceReloadAt : null;
+
+          if (lastForceReloadAt !== null && forceReloadAt && forceReloadAt !== lastForceReloadAt) {
+            location.reload();
+            return;
+          }
+          lastForceReloadAt = forceReloadAt;
+
+
           const order = Array.isArray(data.order) ? data.order : [];
           const idx = typeof data.idx === "number" ? data.idx : 0;
 
