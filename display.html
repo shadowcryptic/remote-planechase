@@ -254,7 +254,7 @@
       }
 
       function getFilteredCards(selectedSources) {
-        const planes = allCards.filter(isPlane);
+        const planes = allCards;
         if (!Array.isArray(selectedSources)) return planes;
         if (selectedSources.length === 0) return [];
         const allowed = new Set(selectedSources);
