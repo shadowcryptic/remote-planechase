@@ -352,323 +352,338 @@
     </div>
 
     <script type="module">
-            import {
-              db,
-              doc,
-              onSnapshot,
-              runTransaction,
-              serverTimestamp,
-            } from "./common.js";
+      import {
+        db,
+        doc,
+        onSnapshot,
+        runTransaction,
+        serverTimestamp,
+      } from "./common.js";
 
-              const statusEl = document.getElementById("status");
-              const roomRef = doc(db, "rooms", "my-room");
+      const statusEl = document.getElementById("status");
+      const roomRef = doc(db, "rooms", "my-room");
 
-            const topImg = document.getElementById("cardTop");
-            const underImg = document.getElementById("cardUnder");
-            const textNameEl = document.getElementById("textName");
-            const textTypeEl = document.getElementById("textType");
-            const textMainEl = document.getElementById("textMain");
-            const textChaosEl = document.getElementById("textChaos");
+      const topImg = document.getElementById("cardTop");
+      const underImg = document.getElementById("cardUnder");
+      const textNameEl = document.getElementById("textName");
+      const textTypeEl = document.getElementById("textType");
+      const textMainEl = document.getElementById("textMain");
+      const textChaosEl = document.getElementById("textChaos");
 
-            let lastForceReloadAt = undefined;
-            let allCards = [];
-            let filteredCards = [];
-            let deckUrls = [];
-            let activeFilterSig = "";
-            let currentUrl = "";
-            let currentCard = null;
-            let showText = false;
-            let animating = false;
-            let lastIdx = null;
-            let repairInFlight = false;
+      let lastForceReloadAt = undefined;
+      let allCards = [];
+      let filteredCards = [];
+      let deckUrls = [];
+      let activeFilterSig = "";
+      let currentUrl = "";
+      let currentCard = null;
+      let showText = false;
+      let animating = false;
+      let lastIdx = null;
+      let repairInFlight = false;
 
-            function setStatus(text) {
-              statusEl.textContent = text;
+      function setStatus(text) {
+        statusEl.textContent = text;
+      }
+
+      async function loadDeck() {
+        const res = await fetch("./deck.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to load deck.json");
+        const data = await res.json();
+        return Array.isArray(data)
+          ? data
+          : Array.isArray(data.deck)
+            ? data.deck
+            : [];
+      }
+
+      function isPlane(card) {
+        const type =
+          typeof card?.plane_type === "string" ? card.plane_type : "";
+        return type.toLowerCase() === "plane";
+      }
+
+      function buildFilterSig(selectedSources) {
+        const sorted = [...selectedSources].sort((a, b) => a.localeCompare(b));
+        return JSON.stringify(sorted);
+      }
+
+      function getFilteredCards(selectedSources) {
+        const planes = allCards.filter(isPlane);
+        if (!Array.isArray(selectedSources)) {
+          return planes;
+        }
+        if (selectedSources.length === 0) return [];
+        const allowed = new Set(selectedSources);
+        return planes.filter((card) => allowed.has(card.source));
+      }
+
+      function applyFilteredCards(selectedSources) {
+        const normalizedSources = Array.isArray(selectedSources)
+          ? selectedSources
+          : null;
+        const sig =
+          normalizedSources === null
+            ? "__ALL__"
+            : buildFilterSig(normalizedSources);
+        if (sig === activeFilterSig) return false;
+
+        activeFilterSig = sig;
+        filteredCards = getFilteredCards(normalizedSources);
+        deckUrls = filteredCards.map((card) => card.image).filter(Boolean);
+        currentUrl = "";
+        currentCard = null;
+        lastIdx = null;
+        clearCards();
+        renderTextCard(null);
+        setStatus("Deck loaded: " + deckUrls.length + " plane cards");
+        return true;
+      }
+
+      function renderTextCard(card) {
+        if (!card) {
+          textNameEl.textContent = "No card";
+          textTypeEl.textContent = "";
+          textMainEl.textContent = "-";
+          textChaosEl.textContent = "-";
+          return;
+        }
+
+        textNameEl.textContent = card.name || "Unnamed";
+        textTypeEl.textContent = card.plane_type || "Plane";
+        textMainEl.textContent = card.main_effect || "-";
+        textChaosEl.textContent = card.chaos_effect || "-";
+      }
+
+      function applyTextMode(enabled) {
+        showText = !!enabled;
+        document.body.classList.toggle("text-mode", showText);
+      }
+
+      function shuffledIndices(n) {
+        const a = [];
+        for (let i = 0; i < n; i++) a.push(i);
+        for (let i = n - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const tmp = a[i];
+          a[i] = a[j];
+          a[j] = tmp;
+        }
+      }
+
+      async function ensureOrderMatchesDeck() {
+        if (!deckUrls.length || repairInFlight) return;
+        repairInFlight = true;
+        try {
+          await runTransaction(db, async (tx) => {
+            const snap = await tx.get(roomRef);
+            const existing = snap.exists() ? snap.data() : {};
+            const order = Array.isArray(existing.order) ? existing.order : [];
+            const existingFilterSig =
+              typeof existing.deckFilterSig === "string"
+                ? existing.deckFilterSig
+                : "";
+
+            if (
+              order.length !== deckUrls.length ||
+              existingFilterSig !== activeFilterSig
+            ) {
+              tx.set(
+                roomRef,
+                {
+                  order: shuffledIndices(deckUrls.length),
+                  idx: -1,
+                  deckFilterSig: activeFilterSig,
+                  shuffledAt: serverTimestamp(),
+                },
+                { merge: true },
+              );
             }
+          });
+        } finally {
+          repairInFlight = false;
+        }
+      }
 
-            async function loadDeck() {
-              const res = await fetch("./deck.json", { cache: "no-store" });
-              if (!res.ok) throw new Error("Failed to load deck.json");
-              const data = await res.json();
-              return Array.isArray(data) ? data : Array.isArray(data.deck) ? data.deck : [];
-            }
+      function parseTimeListToMs(listStr) {
+        // "0.32s, 120ms" -> [320,120]
+        const parts = listStr.split(",").map((s) => s.trim());
+        const ms = parts.map((p) => {
+          if (p.endsWith("ms")) return Number(p.slice(0, -2));
+          if (p.endsWith("s")) return Number(p.slice(0, -1)) * 1000;
+          return Number(p) || 0;
+        });
+        return ms;
+      }
 
-            function isPlane(card) {
-              const type = typeof card?.plane_type === "string" ? card.plane_type : "";
-              return type.toLowerCase() === "plane";
-            }
+      function waitTransition(el) {
+        return new Promise((resolve) => {
+          const cs = getComputedStyle(el);
 
-            function buildFilterSig(selectedSources) {
-              const sorted = [...selectedSources].sort((a, b) => a.localeCompare(b));
-              return JSON.stringify(sorted);
-            }
+          const durations = parseTimeListToMs(cs.transitionDuration);
+          const delays = parseTimeListToMs(cs.transitionDelay);
 
-            function getFilteredCards(selectedSources) {
-              const planes = allCards.filter(isPlane);
-              if (!Array.isArray(selectedSources)) {
-                return planes;
-              }
-              if (selectedSources.length === 0) return [];
-              const allowed = new Set(selectedSources);
-              return planes.filter((card) => allowed.has(card.source));
-            }
+          // If multiple transitions are defined, the browser pairs them by index.
+          // Use the max (duration+delay) as the true upper bound.
+          const n = Math.max(durations.length, delays.length, 1);
+          let maxTotal = 0;
+          for (let i = 0; i < n; i++) {
+            const d = durations[i] ?? durations[durations.length - 1] ?? 0;
+            const l = delays[i] ?? delays[delays.length - 1] ?? 0;
+            const total = d + l;
+            if (total > maxTotal) maxTotal = total;
+          }
 
-            function applyFilteredCards(selectedSources) {
-              const normalizedSources = Array.isArray(selectedSources) ? selectedSources : null;
-              const sig = normalizedSources === null ? "__ALL__" : buildFilterSig(normalizedSources);
-              if (sig === activeFilterSig) return false;
+          // If transitions are effectively off, resolve next tick.
+          if (maxTotal <= 0) {
+            requestAnimationFrame(() => resolve());
+            return;
+          }
 
-              activeFilterSig = sig;
-              filteredCards = getFilteredCards(normalizedSources);
-              deckUrls = filteredCards.map((card) => card.image).filter(Boolean);
-              currentUrl = "";
-              currentCard = null;
-              lastIdx = null;
-              clearCards();
-              renderTextCard(null);
-              setStatus("Deck loaded: " + deckUrls.length + " plane cards");
-              return true;
-            }
+          let done = false;
 
-            function renderTextCard(card) {
-              if (!card) {
-                textNameEl.textContent = "No card";
-                textTypeEl.textContent = "";
-                textMainEl.textContent = "-";
-                textChaosEl.textContent = "-";
-                return;
-              }
+          const onEnd = (e) => {
+            if (done) return;
+            if (e.target !== el) return;
+            if (e.propertyName !== "transform") return;
+            done = true;
+            el.removeEventListener("transitionend", onEnd);
+            clearTimeout(timer);
+            resolve();
+          };
 
-              textNameEl.textContent = card.name || "Unnamed";
-              textTypeEl.textContent = card.plane_type || "Plane";
-              textMainEl.textContent = card.main_effect || "-";
-              textChaosEl.textContent = card.chaos_effect || "-";
-            }
+          el.addEventListener("transitionend", onEnd);
 
-            function applyTextMode(enabled) {
-              showText = !!enabled;
-              document.body.classList.toggle("text-mode", showText);
-            }
+          // Safety timeout slightly above actual max duration
+          const timer = setTimeout(() => {
+            if (done) return;
+            done = true;
+            el.removeEventListener("transitionend", onEnd);
+            resolve();
+          }, maxTotal + 80);
+        });
+      }
 
-            function shuffledIndices(n) {
-              const a = [];
-              for (let i = 0; i < n; i++) a.push(i);
-              for (let i = n - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                const tmp = a[i];
-                a[i] = a[j];
-                a[j] = tmp;
-              }
-            }
+      function resetClasses() {
+        topImg.className = "card top";
+        underImg.className = "card under";
+      }
 
-            async function ensureOrderMatchesDeck() {
-              if (!deckUrls.length || repairInFlight) return;
-              repairInFlight = true;
-              try {
-                await runTransaction(db, async (tx) => {
-                  const snap = await tx.get(roomRef);
-                  const existing = snap.exists() ? snap.data() : {};
-                  const order = Array.isArray(existing.order) ? existing.order : [];
-                  const existingFilterSig =
-                    typeof existing.deckFilterSig === "string" ? existing.deckFilterSig : "";
+      function setInstant(url) {
+        topImg.src = url;
+        underImg.src = url;
+        currentUrl = url;
+        resetClasses();
+      }
 
-                  if (order.length !== deckUrls.length || existingFilterSig !== activeFilterSig) {
-                    tx.set(
-                      roomRef,
-                      {
-                        order: shuffledIndices(deckUrls.length),
-                        idx: -1,
-                        deckFilterSig: activeFilterSig,
-                        shuffledAt: serverTimestamp(),
-                      },
-                      { merge: true },
-                    );
-                  }
-                });
-              } finally {
-                repairInFlight = false;
-              }
-            }
+      function clearCards() {
+        topImg.removeAttribute("src");
+        underImg.removeAttribute("src");
+        currentUrl = "";
+        resetClasses();
+      }
 
-            function parseTimeListToMs(listStr) {
-              // "0.32s, 120ms" -> [320,120]
-              const parts = listStr.split(",").map((s) => s.trim());
-              const ms = parts.map((p) => {
-                if (p.endsWith("ms")) return Number(p.slice(0, -2));
-                if (p.endsWith("s")) return Number(p.slice(0, -1)) * 1000;
-                return Number(p) || 0;
-              });
-              return ms;
-            }
+      async function animateNext(nextUrl) {
+        // NEXT: current top moves right; new top never moves
+        const oldUrl = currentUrl;
+        currentUrl = nextUrl;
 
-            function waitTransition(el) {
-              return new Promise((resolve) => {
-                const cs = getComputedStyle(el);
+        resetClasses();
+        underImg.src = nextUrl;
 
-                const durations = parseTimeListToMs(cs.transitionDuration);
-                const delays = parseTimeListToMs(cs.transitionDelay);
+        // move top out
+        void topImg.offsetWidth;
+        topImg.classList.add("to-right");
+        await waitTransition(topImg);
 
-                // If multiple transitions are defined, the browser pairs them by index.
-                // Use the max (duration+delay) as the true upper bound.
-                const n = Math.max(durations.length, delays.length, 1);
-                let maxTotal = 0;
-                for (let i = 0; i < n; i++) {
-                  const d = durations[i] ?? durations[durations.length - 1] ?? 0;
-                  const l = delays[i] ?? delays[delays.length - 1] ?? 0;
-                  const total = d + l;
-                  if (total > maxTotal) maxTotal = total;
-                }
+        // old card becomes under, parked at-right-under
+        topImg.className = "card under park-right";
+        topImg.src = oldUrl;
 
-                // If transitions are effectively off, resolve next tick.
-                if (maxTotal <= 0) {
-                  requestAnimationFrame(() => resolve());
-                  return;
-                }
+        // new top should be stable and never move
+        underImg.className = "card top";
 
-                let done = false;
+        // return old under to center
+        void topImg.offsetWidth;
+        topImg.classList.remove("park-right");
+        topImg.classList.add("return-center");
+        await waitTransition(topImg);
 
-                const onEnd = (e) => {
-                  if (done) return;
-                  if (e.target !== el) return;
-                  if (e.propertyName !== "transform") return;
-                  done = true;
-                  el.removeEventListener("transitionend", onEnd);
-                  clearTimeout(timer);
-                  resolve();
-                };
+        // Restore fixed roles by swapping src (prevents flick)
+        resetClasses();
+        topImg.src = nextUrl;
+        underImg.src = oldUrl;
+      }
 
-                el.addEventListener("transitionend", onEnd);
+      async function animatePrev(prevUrl) {
+        // PREV: current top does not move; only the under card comes onto top
+        const oldUrl = currentUrl;
+        currentUrl = prevUrl;
 
-                // Safety timeout slightly above actual max duration
-                const timer = setTimeout(() => {
-                  if (done) return;
-                  done = true;
-                  el.removeEventListener("transitionend", onEnd);
-                  resolve();
-                }, maxTotal + 80);
-              });
-            }
+        resetClasses();
+        underImg.src = prevUrl;
 
-            function resetClasses() {
-              topImg.className = "card top";
-              underImg.className = "card under";
-            }
+        // under slides out to right (still under)
+        void underImg.offsetWidth;
+        underImg.classList.add("under-to-right");
+        await waitTransition(underImg);
 
-            function setInstant(url) {
-              topImg.src = url;
-              underImg.src = url;
-              currentUrl = url;
-              resetClasses();
-            }
+        // promote to top at-right instantly...
+        underImg.className = "card top park-right-top";
+        void underImg.offsetWidth;
 
-            function clearCards() {
-              topImg.removeAttribute("src");
-              underImg.removeAttribute("src");
-              currentUrl = "";
-              resetClasses();
-            }
+        // ...then return to center on top
+        underImg.classList.remove("park-right-top");
+        underImg.classList.add("return-center-top");
+        await waitTransition(underImg);
 
-            async function animateNext(nextUrl) {
-              // NEXT: current top moves right; new top never moves
-              const oldUrl = currentUrl;
-              currentUrl = nextUrl;
+        // Commit final state (top is prevUrl, under is oldUrl)
+        resetClasses();
+        topImg.src = prevUrl;
+        underImg.src = oldUrl;
+      }
 
-              resetClasses();
-              underImg.src = nextUrl;
+      async function animateTo(url, delta) {
+        if (!url || url === currentUrl || animating) return;
+        animating = true;
+        try {
+          if (delta > 0) await animateNext(url);
+          else await animatePrev(url);
+        } finally {
+          animating = false;
+        }
+      }
+      // Load deck
+      allCards = await loadDeck();
+      applyFilteredCards(null);
 
-              // move top out
-              void topImg.offsetWidth;
-              topImg.classList.add("to-right");
-              await waitTransition(topImg);
+      // Ensure order exists and matches deck length
+      await ensureOrderMatchesDeck();
 
-              // old card becomes under, parked at-right-under
-              topImg.className = "card under park-right";
-              topImg.src = oldUrl;
+      async function loadDeck() {
+        const res = await fetch("./deck.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to load deck.json");
+        const data = await res.json();
+        return Array.isArray(data.deck) ? data.deck : [];
+      }
 
-              // new top should be stable and never move
-              underImg.className = "card top";
+      const data = snap.data();
+      const selectedSources = Array.isArray(data.selectedSources)
+        ? data.selectedSources
+        : null;
+      const showTextFromDoc = !!data.showText;
 
-              // return old under to center
-              void topImg.offsetWidth;
-              topImg.classList.remove("park-right");
-              topImg.classList.add("return-center");
-              await waitTransition(topImg);
+      applyTextMode(showTextFromDoc);
 
-              // Restore fixed roles by swapping src (prevents flick)
-              resetClasses();
-              topImg.src = nextUrl;
-              underImg.src = oldUrl;
-            }
+      const filterChanged = applyFilteredCards(selectedSources);
+      if (filterChanged) {
+        ensureOrderMatchesDeck().catch((e) => {
+          setStatus("Order repair error: " + e.message);
+        });
+      }
 
-            async function animatePrev(prevUrl) {
-              // PREV: current top does not move; only the under card comes onto top
-              const oldUrl = currentUrl;
-              currentUrl = prevUrl;
-
-              resetClasses();
-              underImg.src = prevUrl;
-
-              // under slides out to right (still under)
-              void underImg.offsetWidth;
-              underImg.classList.add("under-to-right");
-              await waitTransition(underImg);
-
-              // promote to top at-right instantly...
-              underImg.className = "card top park-right-top";
-              void underImg.offsetWidth;
-
-              // ...then return to center on top
-              underImg.classList.remove("park-right-top");
-              underImg.classList.add("return-center-top");
-              await waitTransition(underImg);
-
-              // Commit final state (top is prevUrl, under is oldUrl)
-              resetClasses();
-              topImg.src = prevUrl;
-              underImg.src = oldUrl;
-            }
-
-            async function animateTo(url, delta) {
-              if (!url || url === currentUrl || animating) return;
-              animating = true;
-              try {
-                if (delta > 0) await animateNext(url);
-                else await animatePrev(url);
-              } finally {
-                animating = false;
-              }
-            }
-            // Load deck
-            allCards = await loadDeck();
-            applyFilteredCards(null);
-
-            // Ensure order exists and matches deck length
-            await ensureOrderMatchesDeck();
-
-              async function loadDeck() {
-                  const res = await fetch("./deck.json", { cache: "no-store" });
-                  if (!res.ok) throw new Error("Failed to load deck.json");
-                  const data = await res.json();
-                  return Array.isArray(data.deck) ? data.deck : [];
-              }
-
-                const data = snap.data();
-                const selectedSources = Array.isArray(data.selectedSources)
-                  ? data.selectedSources
-                  : null;
-                const showTextFromDoc = !!data.showText;
-
-                applyTextMode(showTextFromDoc);
-
-                const filterChanged = applyFilteredCards(selectedSources);
-                if (filterChanged) {
-                  ensureOrderMatchesDeck().catch((e) => {
-                    setStatus("Order repair error: " + e.message);
-                  });
-                }
-
-                const forceReloadAt =
-                  typeof data.forceReloadAt === "number" ? data.forceReloadAt : null;
+      const forceReloadAt =
+        typeof data.forceReloadAt === "number" ? data.forceReloadAt : null;
 
       if (lastForceReloadAt === undefined) {
         // first snapshot: baseline only
@@ -680,213 +695,212 @@
       lastForceReloadAt = forceReloadAt;
 
 
-                const order = Array.isArray(data.order) ? data.order : [];
-                const idx = typeof data.idx === "number" ? data.idx : 0;
+      const order = Array.isArray(data.order) ? data.order : [];
+      const idx = typeof data.idx === "number" ? data.idx : 0;
 
-                if (!deckUrls.length) return;
-                if (order.length !== deckUrls.length) {
-                  setStatus("Repairing order…");
-                  ensureOrderMatchesDeck().catch((e) => {
-                    setStatus("Order repair error: " + e.message);
-                  });
-                  return;
-                }
-                if (idx < 0) {
-                  setStatus("idx " + idx + " / " + order.length);
-                  clearCards();
-                  renderTextCard(null);
-                  lastIdx = idx;
-                  return;
-                }
+      if (!deckUrls.length) return;
+      if (order.length !== deckUrls.length) {
+        setStatus("Repairing order…");
+        ensureOrderMatchesDeck().catch((e) => {
+          setStatus("Order repair error: " + e.message);
+        });
+        return;
+      }
+      if (idx < 0) {
+        setStatus("idx " + idx + " / " + order.length);
+        clearCards();
+        renderTextCard(null);
+        lastIdx = idx;
+        return;
+      }
 
-                const deckIndex = order[idx] ?? 0;
-                const url = deckUrls[deckIndex];
-                const card = filteredCards[deckIndex] || null;
-                currentCard = card;
-                renderTextCard(card);
+      const deckIndex = order[idx] ?? 0;
+      const url = deckUrls[deckIndex];
+      const card = filteredCards[deckIndex] || null;
+      currentCard = card;
+      renderTextCard(card);
 
-              function waitTransition(el) {
-                  return new Promise((resolve) => {
-                      const onEnd = (e) => {
-                          if (e.target !== el) return;
-                          if (e.propertyName !== "transform") return;
-                          el.removeEventListener("transitionend", onEnd);
-                          resolve();
-                      };
-                      el.addEventListener("transitionend", onEnd);
+      function waitTransition(el) {
+        return new Promise((resolve) => {
+          const onEnd = (e) => {
+            if (e.target !== el) return;
+            if (e.propertyName !== "transform") return;
+            el.removeEventListener("transitionend", onEnd);
+            resolve();
+          };
+          el.addEventListener("transitionend", onEnd);
 
-                      // fallback in case transitionend doesn't fire
-                      setTimeout(() => {
-                          el.removeEventListener("transitionend", onEnd);
-                          resolve();
-                      }, 2000);
-                  });
-              }
+          // fallback in case transitionend doesn't fire
+          setTimeout(() => {
+            el.removeEventListener("transitionend", onEnd);
+            resolve();
+          }, 2000);
+        });
+      }
 
-              function resetClasses() {
-                  topImg.className = "card top";
-                  underImg.className = "card under";
-              }
+      function resetClasses() {
+        topImg.className = "card top";
+        underImg.className = "card under";
+      }
 
-              function setInstant(url) {
-                  topImg.src = url;
-                  underImg.src = url;
-                  currentUrl = url;
-                  resetClasses();
-              }
+      function setInstant(url) {
+        topImg.src = url;
+        underImg.src = url;
+        currentUrl = url;
+        resetClasses();
+      }
 
-              async function animateNext(nextUrl) {
-                  const oldUrl = currentUrl;
-                  currentUrl = nextUrl;
+      async function animateNext(nextUrl) {
+        const oldUrl = currentUrl;
+        currentUrl = nextUrl;
 
-                  // Put next card underneath and make sure it's ready BEFORE revealing
-                  await setSrcAndDecode(underEl, nextUrl);
+        // Put next card underneath and make sure it's ready BEFORE revealing
+        await setSrcAndDecode(underEl, nextUrl);
 
-                  // Slide old top out to the right
-                  normalize();
-                  void topEl.offsetWidth;
-                  topEl.classList.add("to-right");
-                  await waitTransition(topEl);
+        // Slide old top out to the right
+        normalize();
+        void topEl.offsetWidth;
+        topEl.classList.add("to-right");
+        await waitTransition(topEl);
 
-                  // Swap element references so the NEW card becomes the permanent top element.
-                  // This avoids any end-of-animation src swapping flick.
-                  const oldTop = topEl;
-                  topEl = underEl;
-                  underEl = oldTop;
+        // Swap element references so the NEW card becomes the permanent top element.
+        // This avoids any end-of-animation src swapping flick.
+        const oldTop = topEl;
+        topEl = underEl;
+        underEl = oldTop;
 
-                  // New top stays centered and never moves
-                  topEl.className = "card top";
+        // New top stays centered and never moves
+        topEl.className = "card top";
 
-                  // Old card becomes under, parked at right-under, then returns under to center
-                  underEl.className = "card under park-right";
-                  underEl.src = oldUrl;
+        // Old card becomes under, parked at right-under, then returns under to center
+        underEl.className = "card under park-right";
+        underEl.src = oldUrl;
 
-                  void underEl.offsetWidth;
-                  underEl.classList.remove("park-right");
-                  underEl.classList.add("return-center");
-                  await waitTransition(underEl);
+        void underEl.offsetWidth;
+        underEl.classList.remove("park-right");
+        underEl.classList.add("return-center");
+        await waitTransition(underEl);
 
-                  // Resting state
-                  underEl.className = "card under";
-              }
+        // Resting state
+        underEl.className = "card under";
+      }
 
-              async function animatePrev(prevUrl) {
-                  const oldUrl = currentUrl;
-                  currentUrl = prevUrl;
+      async function animatePrev(prevUrl) {
+        const oldUrl = currentUrl;
+        currentUrl = prevUrl;
 
-                  // Under card will become the new top; prepare it first
-                  await setSrcAndDecode(underEl, prevUrl);
+        // Under card will become the new top; prepare it first
+        await setSrcAndDecode(underEl, prevUrl);
 
-                  // Top MUST NOT MOVE. Only under animates.
-                  normalize();
+        // Top MUST NOT MOVE. Only under animates.
+        normalize();
 
-                  // Under slides out to the right (still underneath)
-                  void underEl.offsetWidth;
-                  underEl.classList.add("under-to-right");
-                  await waitTransition(underEl);
+        // Under slides out to the right (still underneath)
+        void underEl.offsetWidth;
+        underEl.classList.add("under-to-right");
+        await waitTransition(underEl);
 
-                  // Promote under to top at-right instantly, then return to center on top
-                  underEl.className = "card top park-right-top";
-                  void underEl.offsetWidth;
+        // Promote under to top at-right instantly, then return to center on top
+        underEl.className = "card top park-right-top";
+        void underEl.offsetWidth;
 
-                  underEl.classList.remove("park-right-top");
-                  underEl.classList.add("return-center-top");
-                  await waitTransition(underEl);
+        underEl.classList.remove("park-right-top");
+        underEl.classList.add("return-center-top");
+        await waitTransition(underEl);
 
-                  // Swap references AFTER the under finished becoming top.
-                  // Now the new top is permanently topEl, and the old top becomes under.
-                  const oldTop = topEl;
-                  topEl = underEl;
-                  underEl = oldTop;
+        // Swap references AFTER the under finished becoming top.
+        // Now the new top is permanently topEl, and the old top becomes under.
+        const oldTop = topEl;
+        topEl = underEl;
+        underEl = oldTop;
 
-                  topEl.className = "card top";
+        topEl.className = "card top";
 
-                  underEl.className = "card under";
-                  underEl.src = oldUrl;
-              }
+        underEl.className = "card under";
+        underEl.src = oldUrl;
+      }
 
-              async function animateTo(url, delta) {
-                  if (!url || url === currentUrl || animating) return;
-                  animating = true;
-                  try {
-                      if (delta > 0) await animateNext(url);
-                      else await animatePrev(url);
-                  } finally {
-                      animating = false;
-                  }
-              }
+      async function animateTo(url, delta) {
+        if (!url || url === currentUrl || animating) return;
+        animating = true;
+        try {
+          if (delta > 0) await animateNext(url);
+          else await animatePrev(url);
+        } finally {
+          animating = false;
+        }
+      }
 
+      // Load deck
+      deckUrls = await loadDeck();
+      setStatus("Deck loaded: " + deckUrls.length);
 
-              // Load deck
-              deckUrls = await loadDeck();
-              setStatus("Deck loaded: " + deckUrls.length);
+      // Ensure order exists and matches deck length
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(roomRef);
+        const existing = snap.exists() ? snap.data() : {};
+        const order = Array.isArray(existing.order) ? existing.order : [];
 
-              // Ensure order exists and matches deck length
-              await runTransaction(db, async (tx) => {
-                  const snap = await tx.get(roomRef);
-                  const existing = snap.exists() ? snap.data() : {};
-                  const order = Array.isArray(existing.order) ? existing.order : [];
+        if (deckUrls.length > 0 && order.length !== deckUrls.length) {
+          tx.set(
+            roomRef,
+            {
+              order: shuffledIndices(deckUrls.length),
+              idx: 0,
+              shuffledAt: serverTimestamp(),
+            },
+            { merge: true },
+          );
+        }
+      });
 
-                  if (deckUrls.length > 0 && order.length !== deckUrls.length) {
-                      tx.set(
-                          roomRef,
-                          {
-                              order: shuffledIndices(deckUrls.length),
-                              idx: 0,
-                              shuffledAt: serverTimestamp(),
-                          },
-                          { merge: true },
-                      );
-                  }
-              });
+      // Listen for idx changes
+      onSnapshot(roomRef, (snap) => {
+        if (!snap.exists()) return;
 
-              // Listen for idx changes
-              onSnapshot(roomRef, (snap) => {
-                  if (!snap.exists()) return;
+        const data = snap.data();
+        const order = Array.isArray(data.order) ? data.order : [];
+        const idx = typeof data.idx === "number" ? data.idx : 0;
+        const resetAt = data.resetAt ?? null;
 
-                  const data = snap.data();
-                  const order = Array.isArray(data.order) ? data.order : [];
-                  const idx = typeof data.idx === "number" ? data.idx : 0;
-                  const resetAt = data.resetAt ?? null;
+        if (!deckUrls.length || !order.length) return;
 
-                  if (!deckUrls.length || !order.length) return;
+        const deckIndex = order[idx] ?? 0;
+        const url = deckUrls[deckIndex];
 
-                  const deckIndex = order[idx] ?? 0;
-                  const url = deckUrls[deckIndex];
+        // 🔴 HARD RESET DETECTED
+        if (resetAt && resetAt !== lastResetAt) {
+          lastResetAt = resetAt;
 
-                  // 🔴 HARD RESET DETECTED
-                  if (resetAt && resetAt !== lastResetAt) {
-                      lastResetAt = resetAt;
+          // Reset local state
+          revealedOnce = false;
+          lastIdx = idx;
+          currentUrl = BACK_URL;
 
-                      // Reset local state
-                      revealedOnce = false;
-                      lastIdx = idx;
-                      currentUrl = BACK_URL;
+          // Immediately show card back
+          setInstant(BACK_URL);
+          return;
+        }
 
-                      // Immediately show card back
-                      setInstant(BACK_URL);
-                      return;
-                  }
+        // 🟢 FIRST REVEAL (after reset or page load)
+        if (!revealedOnce) {
+          revealedOnce = true;
+          lastIdx = idx;
+          animateTo(url, 1); // NEXT-style reveal
+          return;
+        }
 
-                  // 🟢 FIRST REVEAL (after reset or page load)
-                  if (!revealedOnce) {
-                      revealedOnce = true;
-                      lastIdx = idx;
-                      animateTo(url, 1); // NEXT-style reveal
-                      return;
-                  }
+        // 🟡 NORMAL NAVIGATION
+        const deltaRaw = idx - (lastIdx ?? idx);
+        lastIdx = idx;
 
-                  // 🟡 NORMAL NAVIGATION
-                  const deltaRaw = idx - (lastIdx ?? idx);
-                  lastIdx = idx;
+        if (Math.abs(deltaRaw) !== 1) {
+          setInstant(url);
+          return;
+        }
 
-                  if (Math.abs(deltaRaw) !== 1) {
-                      setInstant(url);
-                      return;
-                  }
-
-                  animateTo(url, deltaRaw > 0 ? 1 : -1);
-              });
+        animateTo(url, deltaRaw > 0 ? 1 : -1);
+      });
     </script>
   </body>
 </html>
