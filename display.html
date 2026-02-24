@@ -221,6 +221,8 @@
       const textChaosEl = document.getElementById("textChaos");
 
       let lastForceReloadAt = undefined;
+      const BACK_URL =
+        "https://backs.scryfall.io/large/7/8/7840c131-f96b-4700-9347-2215c43156e6.jpg";
       let allCards = [];
       let filteredCards = [];
       let deckUrls = [];
@@ -393,6 +395,19 @@
         resetClasses();
       }
 
+      function setBackCard(preloadUrl) {
+        topImg.src = BACK_URL;
+        underImg.src = preloadUrl || BACK_URL;
+        currentUrl = BACK_URL;
+        resetClasses();
+      }
+
+      function preloadImage(url) {
+        if (!url) return;
+        const img = new Image();
+        img.src = url;
+      }
+
       function clearCards() {
         topImg.removeAttribute("src");
         underImg.removeAttribute("src");
@@ -400,7 +415,7 @@
         resetClasses();
       }
 
-      async function animateNext(nextUrl) {
+      async function animateNext(nextUrl, preloadNextUrl) {
         const oldUrl = currentUrl;
         currentUrl = nextUrl;
 
@@ -423,7 +438,7 @@
 
         resetClasses();
         topImg.src = nextUrl;
-        underImg.src = oldUrl;
+        underImg.src = preloadNextUrl || oldUrl;
       }
 
       async function animatePrev(prevUrl) {
@@ -449,11 +464,11 @@
         underImg.src = oldUrl;
       }
 
-      async function animateTo(url, delta) {
+      async function animateTo(url, delta, preloadNextUrl) {
         if (!url || url === currentUrl || animating) return;
         animating = true;
         try {
-          if (delta > 0) await animateNext(url);
+          if (delta > 0) await animateNext(url, preloadNextUrl);
           else await animatePrev(url);
         } finally {
           animating = false;
@@ -507,7 +522,11 @@
 
           if (idx < 0) {
             setStatus("idx " + idx + " / " + order.length);
-            clearCards();
+            const firstDeckIndex = order[0];
+            const firstUrl =
+              typeof firstDeckIndex === "number" ? deckUrls[firstDeckIndex] : null;
+            preloadImage(firstUrl);
+            setBackCard(firstUrl);
             renderTextCard(null);
             lastIdx = idx;
             return;
@@ -516,12 +535,17 @@
           const deckIndex = order[idx] ?? 0;
           const url = deckUrls[deckIndex];
           const card = filteredCards[deckIndex] || null;
+          const nextDeckIndex = order[idx + 1];
+          const nextLikelyUrl =
+            typeof nextDeckIndex === "number" ? deckUrls[nextDeckIndex] : null;
+          preloadImage(nextLikelyUrl);
           renderTextCard(card);
 
           setStatus("idx " + idx + " / " + order.length);
 
           if (!currentUrl) {
             setInstant(url);
+            underImg.src = nextLikelyUrl || url;
             lastIdx = idx;
             return;
           }
@@ -530,10 +554,11 @@
           lastIdx = idx;
           if (Math.abs(deltaRaw) !== 1) {
             setInstant(url);
+            underImg.src = nextLikelyUrl || url;
             return;
           }
 
-          animateTo(url, deltaRaw > 0 ? 1 : -1);
+          animateTo(url, deltaRaw > 0 ? 1 : -1, nextLikelyUrl);
         },
         (err) => setStatus("Snapshot error: " + err.message),
       );
