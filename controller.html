@@ -248,10 +248,60 @@
     min-height: 90px;
     font-size: 24px;
   }
-  .btn-nav span{
-    font-size: 26px;
-  }
-}
+      .btn-nav span{
+        font-size: 26px;
+      }
+    }
+
+    .sources-wrap {
+      position: relative;
+    }
+
+    .sources-panel {
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 10px;
+      display: none;
+    }
+
+    .sources-panel.open {
+      display: block;
+    }
+
+    .sources-actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .sources-actions button {
+      min-height: 44px;
+      font-size: 13px;
+      padding: 8px 10px;
+    }
+
+    .source-list {
+      max-height: 220px;
+      overflow: auto;
+      display: grid;
+      gap: 6px;
+      padding-right: 4px;
+    }
+
+    .source-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .source-item input {
+      width: 18px;
+      height: 18px;
+    }
 
   </style>
 </head>
@@ -285,6 +335,19 @@
         <button id="fs">⛶ Fullscreen</button>
         <button id="reshuffle" aria-label="Reshuffle order">🔀 Reshuffle</button>
       </div>
+      <div class="row">
+        <button id="toggleText" aria-label="Toggle clear text overlay">Text: Off</button>
+        <button id="sourcesBtn" aria-label="Show source filters">Sources</button>
+      </div>
+      <div class="sources-wrap">
+        <div class="sources-panel" id="sourcesPanel">
+          <div class="sources-actions">
+            <button id="sourcesAll" type="button">All</button>
+            <button id="sourcesNone" type="button">None</button>
+          </div>
+          <div class="source-list" id="sourceList"></div>
+        </div>
+      </div>
 
       <!-- <div class="hint">
         Tip: If you rotate your phone, the layout adapts. Reset goes to the start of the current shuffled order.
@@ -307,10 +370,117 @@
     const statusEl = document.getElementById("status");
     const posEl = document.getElementById("pos");
     const netEl = document.getElementById("net");
+    const textBtn = document.getElementById("toggleText");
+    const sourcesBtn = document.getElementById("sourcesBtn");
+    const sourcesPanel = document.getElementById("sourcesPanel");
+    const sourceListEl = document.getElementById("sourceList");
+    const sourcesAllBtn = document.getElementById("sourcesAll");
+    const sourcesNoneBtn = document.getElementById("sourcesNone");
     document.getElementById("room").textContent = "room: " + roomId;
+
+    let allSources = [];
+    let currentSelectedSources = [];
+    let ignoreCheckboxSync = false;
 
     function setStatus(text) {
       statusEl.textContent = "Status: " + text;
+    }
+
+    async function loadAllSources() {
+      const res = await fetch("./deck.json", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to load deck.json");
+      const raw = await res.json();
+      const cards = Array.isArray(raw) ? raw : (Array.isArray(raw.deck) ? raw.deck : []);
+
+      const planesOnly = cards.filter((card) => {
+        const type = typeof card?.plane_type === "string" ? card.plane_type : "";
+        return type.toLowerCase() === "plane";
+      });
+
+      const unique = new Set();
+      for (const card of planesOnly) {
+        if (typeof card?.source === "string" && card.source.trim()) {
+          unique.add(card.source.trim());
+        }
+      }
+      return Array.from(unique).sort((a, b) => a.localeCompare(b));
+    }
+
+    function renderSourceList() {
+      sourceListEl.innerHTML = "";
+      for (const src of allSources) {
+        const label = document.createElement("label");
+        label.className = "source-item";
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.value = src;
+        cb.checked = currentSelectedSources.includes(src);
+        cb.addEventListener("change", onSourceSelectionChanged);
+
+        const text = document.createElement("span");
+        text.textContent = src;
+
+        label.appendChild(cb);
+        label.appendChild(text);
+        sourceListEl.appendChild(label);
+      }
+    }
+
+    function syncSourceChecksFromState() {
+      ignoreCheckboxSync = true;
+      const set = new Set(currentSelectedSources);
+      for (const cb of sourceListEl.querySelectorAll('input[type="checkbox"]')) {
+        cb.checked = set.has(cb.value);
+      }
+      ignoreCheckboxSync = false;
+    }
+
+    function readSelectedSourcesFromUI() {
+      const selected = [];
+      for (const cb of sourceListEl.querySelectorAll('input[type="checkbox"]')) {
+        if (cb.checked) selected.push(cb.value);
+      }
+      return selected;
+    }
+
+    async function setSelectedSources(selectedSources) {
+      const normalized = allSources.filter((src) => selectedSources.includes(src));
+      currentSelectedSources = normalized;
+      syncSourceChecksFromState();
+
+      setStatus("updating sources...");
+      try {
+        await runTransaction(db, async (tx) => {
+          const snap = await tx.get(roomRef);
+          if (!snap.exists()) return;
+          tx.set(roomRef, { selectedSources: normalized }, { merge: true });
+        });
+        setStatus("synced");
+      } catch (e) {
+        setStatus("error: " + e.message);
+      }
+    }
+
+    async function onSourceSelectionChanged() {
+      if (ignoreCheckboxSync) return;
+      await setSelectedSources(readSelectedSourcesFromUI());
+    }
+
+    async function toggleShowText() {
+      setStatus("updating text toggle...");
+      try {
+        await runTransaction(db, async (tx) => {
+          const snap = await tx.get(roomRef);
+          if (!snap.exists()) return;
+          const data = snap.data();
+          const current = !!data.showText;
+          tx.set(roomRef, { showText: !current }, { merge: true });
+        });
+        setStatus("synced");
+      } catch (e) {
+        setStatus("error: " + e.message);
+      }
     }
 
     function updateOnlineStatus(){
@@ -370,6 +540,14 @@ document.addEventListener("fullscreenchange", () => {
       } else {
         posEl.textContent = (idx + 1) + " / ?";
       }
+
+      const showText = !!data.showText;
+      textBtn.textContent = "Text: " + (showText ? "On" : "Off");
+
+      const selectedFromDoc = Array.isArray(data.selectedSources) ? data.selectedSources : allSources;
+      currentSelectedSources = allSources.filter((src) => selectedFromDoc.includes(src));
+      syncSourceChecksFromState();
+
       setStatus("synced");
     }, (err) => {
       setStatus(err.message);
@@ -432,6 +610,17 @@ document.addEventListener("fullscreenchange", () => {
     document.getElementById("next").addEventListener("click", () => step(1));
     document.getElementById("reset").addEventListener("click", () => reset());
     document.getElementById("reshuffle").addEventListener("click", () => reshuffle());
+    textBtn.addEventListener("click", toggleShowText);
+
+    sourcesBtn.addEventListener("click", () => {
+      sourcesPanel.classList.toggle("open");
+    });
+    sourcesAllBtn.addEventListener("click", async () => {
+      await setSelectedSources(allSources.slice());
+    });
+    sourcesNoneBtn.addEventListener("click", async () => {
+      await setSelectedSources([]);
+    });
 
     // Optional: hardware keyboard support (nice on desktop)
     window.addEventListener("keydown", (e) => {
@@ -439,6 +628,14 @@ document.addEventListener("fullscreenchange", () => {
       if (e.key === "ArrowRight") step(1);
       if (e.key === "Home") reset();
     });
+
+    try {
+      allSources = await loadAllSources();
+      currentSelectedSources = allSources.slice();
+      renderSourceList();
+    } catch (e) {
+      setStatus("source load error: " + e.message);
+    }
   </script>
 </body>
 </html>

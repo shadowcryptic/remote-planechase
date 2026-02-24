@@ -19,10 +19,15 @@
         place-items: center;
       }
 
+      .stage {
+        position: relative;
+      }
+
       .deck {
         width: 680px;
         height: 488px;
         position: relative;
+        transition: opacity 220ms ease, filter 220ms ease;
       }
 
       .card {
@@ -106,6 +111,71 @@
           translateZ(0);
       }
 
+      .text-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        border-radius: 16px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 220ms ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+      }
+
+      .text-card {
+        width: min(560px, 92%);
+        max-height: 86%;
+        overflow: auto;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(0, 0, 0, 0.84);
+        box-shadow: 0 16px 42px rgba(0, 0, 0, 0.55);
+        color: rgba(255, 255, 255, 0.96);
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.45;
+        padding: 14px 16px;
+      }
+
+      .text-title {
+        margin: 0 0 6px;
+        font-size: 26px;
+        font-weight: 700;
+      }
+
+      .text-type {
+        margin: 0 0 10px;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.72);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .text-block {
+        margin: 0 0 12px;
+        font-size: 18px;
+        white-space: pre-line;
+      }
+
+      .text-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.68);
+        margin-bottom: 4px;
+      }
+
+      body.text-mode .deck {
+        opacity: 0.25;
+        filter: brightness(0.55) blur(1.6px);
+      }
+
+      body.text-mode .text-overlay {
+        opacity: 1;
+      }
+
       /* Optional debug overlay */
       #status {
         position: fixed;
@@ -138,9 +208,21 @@
   <body>
     <div id="status">Booting…</div>
 
-    <div class="deck">
-      <img id="cardUnder" class="card under" alt="" />
-      <img id="cardTop" class="card top" alt="" />
+    <div class="stage">
+      <div class="deck">
+        <img id="cardUnder" class="card under" alt="" />
+        <img id="cardTop" class="card top" alt="" />
+      </div>
+      <div id="textOverlay" class="text-overlay" aria-live="polite" aria-atomic="true">
+        <div class="text-card">
+          <h2 id="textName" class="text-title">No card</h2>
+          <div id="textType" class="text-type"></div>
+          <div class="text-label">Main Effect</div>
+          <div id="textMain" class="text-block">-</div>
+          <div class="text-label">Chaos Effect</div>
+          <div id="textChaos" class="text-block">-</div>
+        </div>
+      </div>
     </div>
 
     <script type="module">
@@ -157,10 +239,19 @@
 
       const topImg = document.getElementById("cardTop");
       const underImg = document.getElementById("cardUnder");
+      const textNameEl = document.getElementById("textName");
+      const textTypeEl = document.getElementById("textType");
+      const textMainEl = document.getElementById("textMain");
+      const textChaosEl = document.getElementById("textChaos");
 
       let lastForceReloadAt = undefined;
+      let allCards = [];
+      let filteredCards = [];
       let deckUrls = [];
+      let activeFilterSig = "";
       let currentUrl = "";
+      let currentCard = null;
+      let showText = false;
       let animating = false;
       let lastIdx = null;
       let repairInFlight = false;
@@ -173,7 +264,64 @@
         const res = await fetch("./deck.json", { cache: "no-store" });
         if (!res.ok) throw new Error("Failed to load deck.json");
         const data = await res.json();
-        return Array.isArray(data.deck) ? data.deck : [];
+        return Array.isArray(data) ? data : Array.isArray(data.deck) ? data.deck : [];
+      }
+
+      function isPlane(card) {
+        const type = typeof card?.plane_type === "string" ? card.plane_type : "";
+        return type.toLowerCase() === "plane";
+      }
+
+      function buildFilterSig(selectedSources) {
+        const sorted = [...selectedSources].sort((a, b) => a.localeCompare(b));
+        return JSON.stringify(sorted);
+      }
+
+      function getFilteredCards(selectedSources) {
+        const planes = allCards.filter(isPlane);
+        if (!Array.isArray(selectedSources)) {
+          return planes;
+        }
+        if (selectedSources.length === 0) return [];
+        const allowed = new Set(selectedSources);
+        return planes.filter((card) => allowed.has(card.source));
+      }
+
+      function applyFilteredCards(selectedSources) {
+        const normalizedSources = Array.isArray(selectedSources) ? selectedSources : null;
+        const sig = normalizedSources === null ? "__ALL__" : buildFilterSig(normalizedSources);
+        if (sig === activeFilterSig) return false;
+
+        activeFilterSig = sig;
+        filteredCards = getFilteredCards(normalizedSources);
+        deckUrls = filteredCards.map((card) => card.image).filter(Boolean);
+        currentUrl = "";
+        currentCard = null;
+        lastIdx = null;
+        clearCards();
+        renderTextCard(null);
+        setStatus("Deck loaded: " + deckUrls.length + " plane cards");
+        return true;
+      }
+
+      function renderTextCard(card) {
+        if (!card) {
+          textNameEl.textContent = "No card";
+          textTypeEl.textContent = "";
+          textMainEl.textContent = "-";
+          textChaosEl.textContent = "-";
+          return;
+        }
+
+        textNameEl.textContent = card.name || "Unnamed";
+        textTypeEl.textContent = card.plane_type || "Plane";
+        textMainEl.textContent = card.main_effect || "-";
+        textChaosEl.textContent = card.chaos_effect || "-";
+      }
+
+      function applyTextMode(enabled) {
+        showText = !!enabled;
+        document.body.classList.toggle("text-mode", showText);
       }
 
       function shuffledIndices(n) {
@@ -196,13 +344,16 @@
             const snap = await tx.get(roomRef);
             const existing = snap.exists() ? snap.data() : {};
             const order = Array.isArray(existing.order) ? existing.order : [];
+            const existingFilterSig =
+              typeof existing.deckFilterSig === "string" ? existing.deckFilterSig : "";
 
-            if (order.length !== deckUrls.length) {
+            if (order.length !== deckUrls.length || existingFilterSig !== activeFilterSig) {
               tx.set(
                 roomRef,
                 {
                   order: shuffledIndices(deckUrls.length),
                   idx: -1,
+                  deckFilterSig: activeFilterSig,
                   shuffledAt: serverTimestamp(),
                 },
                 { merge: true },
@@ -364,8 +515,8 @@
       }
 
       // Load deck
-      deckUrls = await loadDeck();
-      setStatus("Deck loaded: " + deckUrls.length);
+      allCards = await loadDeck();
+      applyFilteredCards(null);
 
       // Ensure order exists and matches deck length
       await ensureOrderMatchesDeck();
@@ -380,6 +531,19 @@
           }
 
           const data = snap.data();
+          const selectedSources = Array.isArray(data.selectedSources)
+            ? data.selectedSources
+            : null;
+          const showTextFromDoc = !!data.showText;
+
+          applyTextMode(showTextFromDoc);
+
+          const filterChanged = applyFilteredCards(selectedSources);
+          if (filterChanged) {
+            ensureOrderMatchesDeck().catch((e) => {
+              setStatus("Order repair error: " + e.message);
+            });
+          }
 
           const forceReloadAt =
             typeof data.forceReloadAt === "number" ? data.forceReloadAt : null;
@@ -408,12 +572,16 @@ lastForceReloadAt = forceReloadAt;
           if (idx < 0) {
             setStatus("idx " + idx + " / " + order.length);
             clearCards();
+            renderTextCard(null);
             lastIdx = idx;
             return;
           }
 
           const deckIndex = order[idx] ?? 0;
           const url = deckUrls[deckIndex];
+          const card = filteredCards[deckIndex] || null;
+          currentCard = card;
+          renderTextCard(card);
 
           setStatus("idx " + idx + " / " + order.length);
 
