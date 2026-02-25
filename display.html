@@ -167,6 +167,10 @@
         object-fit: contain;
       }
 
+      .symbol-icon.invert {
+        filter: invert(1) brightness(1.2) contrast(1.1);
+      }
+
       .text-label {
         font-size: 12px;
         text-transform: uppercase;
@@ -485,7 +489,8 @@
         return escaped.replace(/\{(T|X|C|W|R|U|B|G|1|2|3|4|PW|Chaos)\}/g, (match, symbol) => {
           const src = SYMBOL_ICONS[symbol];
           if (!src) return match;
-          return `<img class="symbol-icon" src="${escapeHtml(src)}" alt="{${symbol}}" />`;
+          const invertClass = symbol === "PW" || symbol === "Chaos" ? " invert" : "";
+          return `<img class="symbol-icon${invertClass}" src="${escapeHtml(src)}" alt="{${symbol}}" />`;
         });
       }
 
