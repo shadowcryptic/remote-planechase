@@ -160,6 +160,13 @@
         white-space: pre-line;
       }
 
+      .symbol-icon {
+        width: 1.05em;
+        height: 1.05em;
+        vertical-align: -0.12em;
+        object-fit: contain;
+      }
+
       .text-label {
         font-size: 12px;
         text-transform: uppercase;
@@ -403,6 +410,22 @@
       let repairInFlight = false;
       let lastShownOracleId = "";
 
+      // Fill these URLs with your icon image paths.
+      const SYMBOL_ICONS = {
+        T: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/b/be/T.svg",
+        X: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/3/3f/X.svg",
+        C: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/1/1a/C.svg",
+        W: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/8/8e/W.svg",
+        U: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/9/9f/U.svg",
+        B: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/2/2f/B.svg",
+        R: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/8/87/R.svg",
+        G: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/8/88/G.svg",
+        1: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/9/96/1.svg",
+        2: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/4/4d/2.svg",
+        3: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/8/8c/3.svg",
+        4: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/b/bf/4.svg"
+      };
+
       function setStatus(text) {
         statusEl.textContent = text;
       }
@@ -436,14 +459,32 @@
         if (!card) {
           textNameEl.textContent = "No card";
           textTypeEl.textContent = "";
-          textMainEl.textContent = "-";
-          textChaosEl.textContent = "-";
+          textMainEl.innerHTML = "-";
+          textChaosEl.innerHTML = "-";
           return;
         }
         textNameEl.textContent = card.name || "Unnamed";
         textTypeEl.textContent = card.plane_type || "Plane";
-        textMainEl.textContent = card.main_effect || "-";
-        textChaosEl.textContent = card.chaos_effect || "-";
+        textMainEl.innerHTML = formatRulesTextWithSymbols(card.main_effect || "-");
+        textChaosEl.innerHTML = formatRulesTextWithSymbols(card.chaos_effect || "-");
+      }
+
+      function escapeHtml(text) {
+        return String(text)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function formatRulesTextWithSymbols(text) {
+        const escaped = escapeHtml(text).replace(/\r?\n/g, "<br>");
+        return escaped.replace(/\{(T|R|U|B|G|1|2|3|4|5)\}/g, (match, symbol) => {
+          const src = SYMBOL_ICONS[symbol];
+          if (!src) return match;
+          return `<img class="symbol-icon" src="${escapeHtml(src)}" alt="{${symbol}}" />`;
+        });
       }
 
       function applyFilteredCards(selectedSources) {
