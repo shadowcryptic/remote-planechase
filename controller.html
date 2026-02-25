@@ -531,9 +531,9 @@ document.addEventListener("fullscreenchange", () => {
       const idx = typeof data.idx === "number" ? data.idx : 0;
       const order = Array.isArray(data.order) ? data.order : [];
       if (order.length > 0) {
-        posEl.textContent = (idx + 1) + " / " + order.length;
+        posEl.textContent = (idx) + " / " + order.length;
       } else {
-        posEl.textContent = (idx + 1) + " / ?";
+        posEl.textContent = (idx) + " / ?";
       }
 
       const showText = !!data.showText;
