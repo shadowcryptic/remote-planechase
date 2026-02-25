@@ -145,6 +145,41 @@
         margin-bottom: 4px;
       }
 
+      .phenomenon-flash {
+        position: fixed;
+        inset: 0;
+        z-index: 12;
+        pointer-events: none;
+        opacity: 0;
+        background:
+          radial-gradient(
+            circle at center,
+            rgba(255, 255, 255, 0.4) 0%,
+            rgba(80, 220, 255, 0.22) 35%,
+            rgba(20, 90, 150, 0.16) 60%,
+            rgba(0, 0, 0, 0) 78%
+          );
+      }
+
+      .phenomenon-flash.active {
+        animation: phenomenonPulse 950ms cubic-bezier(0.18, 0.8, 0.2, 1);
+      }
+
+      @keyframes phenomenonPulse {
+        0% {
+          opacity: 0;
+          transform: scale(0.92);
+        }
+        26% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        100% {
+          opacity: 0;
+          transform: scale(1.08);
+        }
+      }
+
       body.text-mode .deck {
         opacity: 0.25;
         filter: brightness(0.55) blur(1.6px);
@@ -183,6 +218,7 @@
 
   <body>
     <div id="status">Booting…</div>
+    <div id="phenomenonFlash" class="phenomenon-flash" aria-hidden="true"></div>
 
     <div class="stage">
       <div class="deck">
@@ -219,6 +255,7 @@
       const textTypeEl = document.getElementById("textType");
       const textMainEl = document.getElementById("textMain");
       const textChaosEl = document.getElementById("textChaos");
+      const phenomenonFlashEl = document.getElementById("phenomenonFlash");
 
       let lastForceReloadAt = undefined;
       const BACK_URL =
@@ -231,6 +268,7 @@
       let animating = false;
       let lastIdx = null;
       let repairInFlight = false;
+      let lastShownOracleId = "";
 
       function setStatus(text) {
         statusEl.textContent = text;
@@ -285,14 +323,27 @@
         deckUrls = filteredCards.map((card) => card.image).filter(Boolean);
         currentUrl = "";
         lastIdx = null;
+        lastShownOracleId = "";
         clearCards();
         renderTextCard(null);
-        setStatus("Deck loaded: " + deckUrls.length + " plane cards");
+        setStatus("Deck loaded: " + deckUrls.length + " cards");
         return true;
       }
 
       function applyTextMode(enabled) {
         document.body.classList.toggle("text-mode", !!enabled);
+      }
+
+      function isPhenomenon(card) {
+        const type = typeof card?.plane_type === "string" ? card.plane_type : "";
+        return type.toLowerCase() === "phenomenon";
+      }
+
+      function triggerPhenomenonEffect() {
+        if (!phenomenonFlashEl) return;
+        phenomenonFlashEl.classList.remove("active");
+        void phenomenonFlashEl.offsetWidth;
+        phenomenonFlashEl.classList.add("active");
       }
 
       function shuffledIndices(n) {
@@ -528,6 +579,7 @@
             preloadImage(firstUrl);
             setBackCard(firstUrl);
             renderTextCard(null);
+            lastShownOracleId = "";
             lastIdx = idx;
             return;
           }
@@ -540,6 +592,12 @@
             typeof nextDeckIndex === "number" ? deckUrls[nextDeckIndex] : null;
           preloadImage(nextLikelyUrl);
           renderTextCard(card);
+          const shownOracleId =
+            typeof card?.oracle_id === "string" ? card.oracle_id : "";
+          if (shownOracleId !== lastShownOracleId && isPhenomenon(card)) {
+            triggerPhenomenonEffect();
+          }
+          lastShownOracleId = shownOracleId;
 
           setStatus("idx " + idx + " / " + order.length);
 

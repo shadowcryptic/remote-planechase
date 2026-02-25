@@ -392,13 +392,8 @@
       const raw = await res.json();
       const cards = Array.isArray(raw) ? raw : (Array.isArray(raw.deck) ? raw.deck : []);
 
-      const planesOnly = cards.filter((card) => {
-        const type = typeof card?.plane_type === "string" ? card.plane_type : "";
-        return type.toLowerCase() === "plane";
-      });
-
       const unique = new Set();
-      for (const card of planesOnly) {
+      for (const card of cards) {
         if (typeof card?.source === "string" && card.source.trim()) {
           unique.add(card.source.trim());
         }
