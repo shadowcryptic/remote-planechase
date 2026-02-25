@@ -773,7 +773,7 @@
           }
 
           if (idx < 0) {
-            setStatus("idx " + idx + " / " + order.length);
+            setStatus("idx " + str(int(idx + 1)) + " / " + order.length);
             const firstDeckIndex = order[0];
             const firstUrl =
               typeof firstDeckIndex === "number" ? deckUrls[firstDeckIndex] : null;
