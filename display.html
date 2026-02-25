@@ -24,6 +24,28 @@
         z-index: 5;
       }
 
+      .stage::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 530px;
+        height: 730px;
+        transform: translate(-50%, -50%) rotate(90deg) scale(0.98);
+        border-radius: 22px;
+        border: 2px solid rgba(255, 110, 110, 0.5);
+        box-shadow:
+          0 0 20px rgba(255, 72, 72, 0.4),
+          0 0 48px rgba(170, 16, 16, 0.35);
+        opacity: 0;
+        pointer-events: none;
+        z-index: 8;
+      }
+
+      body.phenomenon-active .stage::after {
+        animation: phenomenonRingPulse 1600ms linear infinite;
+      }
+
       .deck {
         width: 680px;
         height: 488px;
@@ -260,6 +282,21 @@
         }
       }
 
+      @keyframes phenomenonRingPulse {
+        0% {
+          opacity: 0.24;
+          transform: translate(-50%, -50%) rotate(90deg) scale(0.97);
+        }
+        45% {
+          opacity: 0.72;
+          transform: translate(-50%, -50%) rotate(90deg) scale(1.02);
+        }
+        100% {
+          opacity: 0.24;
+          transform: translate(-50%, -50%) rotate(90deg) scale(0.97);
+        }
+      }
+
       body.text-mode .deck {
         opacity: 0.25;
         filter: brightness(0.55) blur(1.6px);
@@ -298,6 +335,11 @@
         .phenomenon-particles-front.active {
           animation: none !important;
           opacity: 0;
+        }
+
+        body.phenomenon-active .stage::after {
+          animation: none !important;
+          opacity: 0.32;
         }
       }
     </style>
@@ -415,6 +457,7 @@
         currentUrl = "";
         lastIdx = null;
         lastShownOracleId = "";
+        setPhenomenonActive(false);
         clearCards();
         renderTextCard(null);
         setStatus("Deck loaded: " + deckUrls.length + " cards");
@@ -423,6 +466,10 @@
 
       function applyTextMode(enabled) {
         document.body.classList.toggle("text-mode", !!enabled);
+      }
+
+      function setPhenomenonActive(enabled) {
+        document.body.classList.toggle("phenomenon-active", !!enabled);
       }
 
       function isPhenomenon(card) {
@@ -635,6 +682,7 @@
         roomRef,
         (snap) => {
           if (!snap.exists()) {
+            setPhenomenonActive(false);
             setStatus("Room doc not found");
             return;
           }
@@ -665,8 +713,12 @@
           const order = Array.isArray(data.order) ? data.order : [];
           const idx = typeof data.idx === "number" ? data.idx : 0;
 
-          if (!deckUrls.length) return;
+          if (!deckUrls.length) {
+            setPhenomenonActive(false);
+            return;
+          }
           if (order.length !== deckUrls.length) {
+            setPhenomenonActive(false);
             setStatus("Repairing order...");
             ensureOrderMatchesDeck().catch((e) => setStatus("Order repair error: " + e.message));
             return;
@@ -680,6 +732,7 @@
             preloadImage(firstUrl);
             setBackCard(firstUrl);
             renderTextCard(null);
+            setPhenomenonActive(false);
             lastShownOracleId = "";
             lastIdx = idx;
             return;
@@ -693,9 +746,11 @@
             typeof nextDeckIndex === "number" ? deckUrls[nextDeckIndex] : null;
           preloadImage(nextLikelyUrl);
           renderTextCard(card);
+          const phenomenonNow = isPhenomenon(card);
+          setPhenomenonActive(phenomenonNow);
           const shownOracleId =
             typeof card?.oracle_id === "string" ? card.oracle_id : "";
-          if (shownOracleId !== lastShownOracleId && isPhenomenon(card)) {
+          if (shownOracleId !== lastShownOracleId && phenomenonNow) {
             triggerPhenomenonEffect();
           }
           lastShownOracleId = shownOracleId;
