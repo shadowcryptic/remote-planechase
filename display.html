@@ -423,7 +423,9 @@
         1: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/9/96/1.svg",
         2: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/4/4d/2.svg",
         3: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/8/8c/3.svg",
-        4: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/b/bf/4.svg"
+        4: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/b/bf/4.svg",
+        PW: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/2/2f/PW.svg",
+        CHAOS: "https://static.wikia.nocookie.net/mtgsalvation_gamepedia/images/9/9d/CHAOS.svg"
       };
 
       function setStatus(text) {
@@ -480,7 +482,7 @@
 
       function formatRulesTextWithSymbols(text) {
         const escaped = escapeHtml(text).replace(/\r?\n/g, "<br>");
-        return escaped.replace(/\{(T|R|U|B|G|1|2|3|4|5)\}/g, (match, symbol) => {
+        return escaped.replace(/\{(T|X|C|W|R|U|B|G|1|2|3|4|PW|CHAOS)\}/g, (match, symbol) => {
           const src = SYMBOL_ICONS[symbol];
           if (!src) return match;
           return `<img class="symbol-icon" src="${escapeHtml(src)}" alt="{${symbol}}" />`;

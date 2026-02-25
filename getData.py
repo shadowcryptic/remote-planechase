@@ -66,7 +66,7 @@ def split_oracle_text(oracle_text):
         main_effect = before.strip()
         chaos_effect = after.strip()
 
-        return main_effect, "Whenever you roll 🌀, " + chaos_effect
+        return main_effect, "Whenever you roll \{Chaos\}, " + chaos_effect
 
     return oracle_text.strip(), None
 
