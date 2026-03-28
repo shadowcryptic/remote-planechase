@@ -13,9 +13,6 @@
       --border: rgba(255,255,255,0.10);
       --shadow: 0 12px 40px rgba(0,0,0,0.45);
       --radius: 18px;
-      --accent: #7dd3fc;
-      --accent2: #a78bfa;
-      --danger: #fb7185;
     }
 
     * { box-sizing: border-box; }
@@ -104,7 +101,7 @@
       font-size: 18px;
       font-weight: 700;
       box-shadow: 0 10px 24px rgba(0,0,0,0.35);
-      transition: transform 0.05s ease, filter 0.15s ease, border-color 0.15s ease;
+      transition: transform 0.05s ease, filter 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
       width: 100%;
       min-height: 64px;
       touch-action: manipulation;
@@ -113,6 +110,13 @@
     button:active {
       transform: translateY(1px) scale(0.99);
       filter: brightness(1.05);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      filter: saturate(0.65);
+      transform: none;
     }
 
     .btn-primary {
@@ -374,6 +378,7 @@
     let currentSelectedSources = [];
     let ignoreCheckboxSync = false;
     let currentMode = MODE_PLANECHASE;
+    let bountyClaimPending = false;
 
     function setStatus(text) {
       statusEl.textContent = "Status: " + text;
@@ -399,18 +404,30 @@
       return order.length > 0 ? idx + " / " + order.length : idx + " / ?";
     }
 
+    function isBountyClaimPending(data) {
+      const state = getModeState(data, MODE_BOUNTY);
+      return !!state.claimPending;
+    }
+
     function updateModeUI(mode, data = null) {
       currentMode = normalizeMode(mode);
       const isBounty = currentMode === MODE_BOUNTY;
+      bountyClaimPending = isBounty && data ? isBountyClaimPending(data) : false;
 
       prevLabelEl.textContent = isBounty ? "PASS" : "PREV";
-      nextLabelEl.textContent = isBounty ? "CLAIM" : "NEXT";
+      nextLabelEl.textContent = isBounty ? (bountyClaimPending ? "NEXT" : "CLAIM") : "NEXT";
       prevIconEl.innerHTML = isBounty ? "&#9654;" : "&#9664;";
-      nextIconEl.textContent = isBounty ? "$" : "&#9654;";
+      nextIconEl.innerHTML = isBounty ? (bountyClaimPending ? "&#9654;" : "$") : "&#9654;";
       prevBtn.setAttribute("aria-label", isBounty ? "Pass bounty reward tier" : "Previous card");
-      nextBtn.setAttribute("aria-label", isBounty ? "Claim bounty reward and move to the next card" : "Next card");
+      nextBtn.setAttribute(
+        "aria-label",
+        isBounty
+          ? (bountyClaimPending ? "Reveal the next bounty card" : "Claim the current bounty reward")
+          : "Next card",
+      );
       resetBtn.setAttribute("aria-label", isBounty ? "Reset bounty deck" : "Reset planar deck");
       reshuffleBtn.setAttribute("aria-label", isBounty ? "Reshuffle bounty order" : "Reshuffle planar order");
+      prevBtn.disabled = bountyClaimPending;
 
       modePlaneBtn.classList.toggle("active", !isBounty);
       modePlaneBtn.setAttribute("aria-pressed", String(!isBounty));
@@ -611,8 +628,9 @@
 
           const stateField = getStateField(MODE_BOUNTY);
           const modeState = getModeState(data, MODE_BOUNTY);
-          const rewardTier = typeof modeState.rewardTier === "number" ? modeState.rewardTier : DEFAULT_BOUNTY_REWARD;
+          if (modeState.claimPending) return;
 
+          const rewardTier = typeof modeState.rewardTier === "number" ? modeState.rewardTier : DEFAULT_BOUNTY_REWARD;
           tx.set(
             roomRef,
             {
@@ -642,6 +660,41 @@
 
           const stateField = getStateField(MODE_BOUNTY);
           const modeState = getModeState(data, MODE_BOUNTY);
+          if (modeState.claimPending) return;
+
+          const rewardTier = typeof modeState.rewardTier === "number" ? modeState.rewardTier : DEFAULT_BOUNTY_REWARD;
+          tx.set(
+            roomRef,
+            {
+              [stateField]: {
+                ...modeState,
+                claimPending: true,
+                claimedTier: rewardTier,
+              },
+            },
+            { merge: true },
+          );
+        });
+        setStatus("synced");
+      } catch (e) {
+        setStatus("error: " + e.message);
+      }
+    }
+
+    async function revealNextBounty() {
+      setStatus("sending...");
+      try {
+        await runTransaction(db, async (tx) => {
+          const snap = await tx.get(roomRef);
+          if (!snap.exists()) return;
+
+          const data = snap.data();
+          if (normalizeMode(data.mode) !== MODE_BOUNTY) return;
+
+          const stateField = getStateField(MODE_BOUNTY);
+          const modeState = getModeState(data, MODE_BOUNTY);
+          if (!modeState.claimPending) return;
+
           const order = Array.isArray(modeState.order) ? modeState.order : [];
           const idx = typeof modeState.idx === "number" ? modeState.idx : 0;
           const nextIdx = Math.min(Math.max(0, order.length - 1), Math.max(-1, idx + 1));
@@ -653,6 +706,8 @@
                 ...modeState,
                 idx: nextIdx,
                 rewardTier: DEFAULT_BOUNTY_REWARD,
+                claimPending: false,
+                claimedTier: null,
               },
             },
             { merge: true },
@@ -678,6 +733,8 @@
           const patch = { ...modeState, idx: -1 };
           if (mode === MODE_BOUNTY) {
             patch.rewardTier = DEFAULT_BOUNTY_REWARD;
+            patch.claimPending = false;
+            patch.claimedTier = null;
           }
 
           tx.set(roomRef, { [stateField]: patch }, { merge: true });
@@ -702,6 +759,8 @@
           const patch = { ...modeState, order: [], idx: 0 };
           if (mode === MODE_BOUNTY) {
             patch.rewardTier = DEFAULT_BOUNTY_REWARD;
+            patch.claimPending = false;
+            patch.claimedTier = null;
           }
 
           tx.set(roomRef, { [stateField]: patch, forceReloadAt: Date.now() }, { merge: true });
@@ -728,6 +787,7 @@
 
     prevBtn.addEventListener("click", () => {
       if (currentMode === MODE_BOUNTY) {
+        if (bountyClaimPending) return;
         passBounty();
       } else {
         step(-1);
@@ -736,7 +796,8 @@
 
     nextBtn.addEventListener("click", () => {
       if (currentMode === MODE_BOUNTY) {
-        claimBounty();
+        if (bountyClaimPending) revealNextBounty();
+        else claimBounty();
       } else {
         step(1);
       }
@@ -762,12 +823,19 @@
 
     window.addEventListener("keydown", (e) => {
       if (e.key === "ArrowLeft") {
-        if (currentMode === MODE_BOUNTY) passBounty();
-        else step(-1);
+        if (currentMode === MODE_BOUNTY) {
+          if (!bountyClaimPending) passBounty();
+        } else {
+          step(-1);
+        }
       }
       if (e.key === "ArrowRight") {
-        if (currentMode === MODE_BOUNTY) claimBounty();
-        else step(1);
+        if (currentMode === MODE_BOUNTY) {
+          if (bountyClaimPending) revealNextBounty();
+          else claimBounty();
+        } else {
+          step(1);
+        }
       }
       if (e.key === "Home") reset();
     });

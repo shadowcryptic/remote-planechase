@@ -229,6 +229,141 @@
         color: rgba(255,255,255,0.86);
       }
 
+      .bounty-hud {
+        position: fixed;
+        top: 50%;
+        z-index: 11;
+        transform: translateY(-50%);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 180ms ease;
+      }
+
+      body.mode-bounty .bounty-hud {
+        opacity: 1;
+      }
+
+      .bounty-hud-left {
+        left: 26px;
+      }
+
+      .bounty-hud-right {
+        right: 26px;
+        width: min(280px, 24vw);
+      }
+
+      .bounty-panel {
+        border: 1px solid rgba(255,255,255,0.16);
+        border-radius: 18px;
+        background: rgba(0,0,0,0.62);
+        box-shadow: 0 18px 36px rgba(0,0,0,0.35);
+        backdrop-filter: blur(10px);
+        padding: 16px 14px;
+      }
+
+      .bounty-panel-title {
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.64);
+        margin-bottom: 10px;
+      }
+
+      .tier-dots {
+        display: grid;
+        gap: 14px;
+      }
+
+      .tier-dot {
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        border: 2px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.08);
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+      }
+
+      .tier-dot.active {
+        border-color: rgba(250,204,21,0.95);
+        background: rgba(250,204,21,0.9);
+        box-shadow:
+          0 0 18px rgba(250,204,21,0.4),
+          inset 0 0 0 1px rgba(255,255,255,0.35);
+      }
+
+      .reward-sidebar {
+        display: grid;
+        gap: 8px;
+      }
+
+      .reward-sidebar-item {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+        align-items: start;
+        padding: 8px 10px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.04);
+        color: rgba(255,255,255,0.82);
+        font-size: 15px;
+        line-height: 1.35;
+      }
+
+      .reward-sidebar-item.active {
+        border-color: rgba(239,68,68,0.45);
+        background: rgba(239,68,68,0.18);
+        color: rgba(255,255,255,0.96);
+      }
+
+      .claim-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 11;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        border-radius: 20px;
+        background: rgba(0,0,0,0.62);
+        pointer-events: none;
+      }
+
+      body.mode-bounty.claim-pending .claim-overlay {
+        display: flex;
+      }
+
+      .claim-card {
+        width: min(420px, 78%);
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 18px;
+        background: rgba(15,15,15,0.86);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.45);
+        padding: 20px 22px;
+        text-align: center;
+        color: rgba(255,255,255,0.96);
+      }
+
+      .claim-eyebrow {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: rgba(255,255,255,0.62);
+        margin-bottom: 10px;
+      }
+
+      .claim-tier {
+        font-size: 42px;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 14px;
+      }
+
+      .claim-reward {
+        font-size: 20px;
+        line-height: 1.35;
+      }
+
       .phenomenon-flash {
         position: fixed;
         inset: 0;
@@ -411,11 +546,30 @@
     <div id="phenomenonParticlesBack" class="phenomenon-particles-back" aria-hidden="true"></div>
     <div id="phenomenonFlash" class="phenomenon-flash" aria-hidden="true"></div>
     <div id="phenomenonParticlesFront" class="phenomenon-particles-front" aria-hidden="true"></div>
+    <div class="bounty-hud bounty-hud-left" aria-hidden="true">
+      <div class="bounty-panel">
+        <div class="bounty-panel-title">Tier</div>
+        <div id="tierDots" class="tier-dots"></div>
+      </div>
+    </div>
+    <div class="bounty-hud bounty-hud-right" aria-hidden="true">
+      <div class="bounty-panel">
+        <div class="bounty-panel-title">Rewards</div>
+        <div id="rewardSidebar" class="reward-sidebar"></div>
+      </div>
+    </div>
 
     <div class="stage">
       <div class="deck">
         <img id="cardUnder" class="card under" alt="" />
         <img id="cardTop" class="card top" alt="" />
+        <div id="claimOverlay" class="claim-overlay" aria-live="polite">
+          <div class="claim-card">
+            <div class="claim-eyebrow">Reward Claimed</div>
+            <div id="claimTier" class="claim-tier">Tier 1</div>
+            <div id="claimReward" class="claim-reward">Create a Treasure token.</div>
+          </div>
+        </div>
       </div>
       <div id="textOverlay" class="text-overlay" aria-live="polite" aria-atomic="true">
         <div class="text-card">
@@ -463,6 +617,10 @@
       const secondaryLabelEl = document.getElementById("secondaryLabel");
       const textPrimaryEl = document.getElementById("textPrimary");
       const textSecondaryEl = document.getElementById("textSecondary");
+      const tierDotsEl = document.getElementById("tierDots");
+      const rewardSidebarEl = document.getElementById("rewardSidebar");
+      const claimTierEl = document.getElementById("claimTier");
+      const claimRewardEl = document.getElementById("claimReward");
       const phenomenonParticlesBackEl = document.getElementById("phenomenonParticlesBack");
       const phenomenonFlashEl = document.getElementById("phenomenonFlash");
       const phenomenonParticlesFrontEl = document.getElementById("phenomenonParticlesFront");
@@ -615,6 +773,42 @@
         secondaryLabelEl.textContent = "Chaos Effect";
         textPrimaryEl.innerHTML = formatRulesTextWithSymbols(card.main_effect || "-");
         textSecondaryEl.innerHTML = formatRulesTextWithSymbols(card.chaos_effect || "-");
+      }
+
+      function renderTierDots(activeTier) {
+        tierDotsEl.innerHTML = BOUNTY_REWARDS.map((_, index) => {
+          const tier = index + 1;
+          const activeClass = tier === activeTier ? " active" : "";
+          return `<div class="tier-dot${activeClass}" aria-label="Tier ${tier}"></div>`;
+        }).join("");
+      }
+
+      function renderRewardSidebar(activeTier) {
+        rewardSidebarEl.innerHTML = BOUNTY_REWARDS.map((reward, index) => {
+          const tier = index + 1;
+          const activeClass = tier === activeTier ? " active" : "";
+          return `<div class="reward-sidebar-item${activeClass}"><div class="reward-tier">${tier}.</div><div>${formatRulesTextWithSymbols(reward)}</div></div>`;
+        }).join("");
+      }
+
+      function updateBountyHud(mode, rewardTier, claimPending, claimedTier) {
+        const isBounty = mode === MODE_BOUNTY;
+        const activeTier = normalizeRewardTier(claimPending ? claimedTier : rewardTier);
+
+        document.body.classList.toggle("claim-pending", isBounty && !!claimPending);
+
+        if (!isBounty) {
+          tierDotsEl.innerHTML = "";
+          rewardSidebarEl.innerHTML = "";
+          claimTierEl.textContent = "Tier 1";
+          claimRewardEl.textContent = BOUNTY_REWARDS[0];
+          return;
+        }
+
+        renderTierDots(activeTier);
+        renderRewardSidebar(activeTier);
+        claimTierEl.textContent = "Tier " + activeTier;
+        claimRewardEl.innerHTML = formatRulesTextWithSymbols(BOUNTY_REWARDS[activeTier - 1]);
       }
 
       function applyDeck(mode, selectedSources) {
@@ -888,10 +1082,16 @@
           const mode = normalizeMode(data.mode);
           const selectedSources = Array.isArray(data.selectedSources) ? data.selectedSources : null;
           const showTextFromDoc = !!data.showText;
-          const rewardTier = normalizeRewardTier(getModeState(data, MODE_BOUNTY).rewardTier);
+          const bountyState = getModeState(data, MODE_BOUNTY);
+          const rewardTier = normalizeRewardTier(bountyState.rewardTier);
+          const claimPending = !!bountyState.claimPending;
+          const claimedTier = normalizeRewardTier(
+            typeof bountyState.claimedTier === "number" ? bountyState.claimedTier : rewardTier,
+          );
 
           applyTextMode(showTextFromDoc);
           applyDisplayMode(mode);
+          updateBountyHud(mode, rewardTier, claimPending, claimedTier);
 
           const planeFilterChanged = applyDeck(MODE_PLANECHASE, selectedSources);
           applyDeck(MODE_BOUNTY, null);
@@ -944,6 +1144,7 @@
             preloadImage(firstUrl);
             setBackCard(mode, firstUrl);
             renderTextCard(mode, null, rewardTier);
+            updateBountyHud(mode, rewardTier, false, claimedTier);
             setPhenomenonActive(false);
             activeDeck.lastShownOracleId = "";
             lastIdx = idx;
@@ -959,6 +1160,7 @@
             typeof nextDeckIndex === "number" ? activeDeck.deckUrls[nextDeckIndex] : null;
           preloadImage(nextLikelyUrl);
           renderTextCard(mode, card, rewardTier);
+          updateBountyHud(mode, rewardTier, claimPending, claimedTier);
 
           if (mode === MODE_PLANECHASE) {
             const phenomenonNow = isPhenomenon(card);
@@ -975,7 +1177,9 @@
 
           setStatus(
             mode === MODE_BOUNTY
-              ? `Bounty ${idx} / ${order.length} tier ${rewardTier}`
+              ? (claimPending
+                ? `Bounty ${idx} / ${order.length} claimed tier ${claimedTier}`
+                : `Bounty ${idx} / ${order.length} tier ${rewardTier}`)
               : `idx ${idx} / ${order.length}`,
           );
 
