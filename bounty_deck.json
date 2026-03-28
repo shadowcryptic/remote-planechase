@@ -1,0 +1,62 @@
+[
+    {
+        "name": "Bounty: Eriana, Wrecking Ball",
+        "image": "https://cards.scryfall.io/large/front/a/c/acd27632-4c28-4dc3-90ad-b94fe176b91a.jpg?1712319002",
+        "bounty_effect": "At the beginning of your end step, if you committed a crime this turn, collect your reward. (Targeting opponents, anything they control, and/or cards in their graveyards is a crime.)"
+    },
+    {
+        "name": "Bounty: Frankie The Fang",
+        "image": "https://cards.scryfall.io/large/front/c/d/cd756281-c63f-44cf-88b5-e5d461195acd.jpg?1712319074",
+        "bounty_effect": "At the beginning of your end step, if the player with the most life or tied for most life as the turn began was dealt combat damage this turn, collect your reward."
+    },
+    {
+        "name": "Bounty: Gorra Tash and Silas",
+        "image": "https://cards.scryfall.io/large/front/4/1/415c0799-2ab4-4f88-be9b-d47c07d7a44b.jpg?1712396684",
+        "bounty_effect": "At the beginning of your end step, if all opponents were dealt combat damage this turn, collect your reward."
+    },
+    {
+        "name": "Bounty: Lord Fajjal",
+        "image": "https://cards.scryfall.io/large/front/5/e/5e54793b-a5e4-4391-8bbb-509a99e08bcb.jpg?1712319237",
+        "bounty_effect": "At the beginning of your end step, if a land card was put into your graveyard from anywhere this turn, collect your reward."
+    },
+    {
+        "name": "Bounty: Lyssa, Sterling Collector",
+        "image": "https://cards.scryfall.io/large/front/f/7/f7a095ac-8316-4824-bad5-0b74a58dd2e9.jpg?1712319254",
+        "bounty_effect": "At the beginning of your end step, if the player with the most cards in hand or tied for most cards as the turn began was dealt combat damage this turn, collect your reward."
+    },
+    {
+        "name": "Bounty: Miron Tillas Jr.",
+        "image": "https://cards.scryfall.io/large/front/0/f/0fd5b9c3-9c18-446d-9d81-7a3a90d7bbee.jpg?1712319301",
+        "bounty_effect": "At the beginning of your end step, if the nearest opponent to your left as the turn began was dealt combat damage this turn, collect your reward."
+    },
+    {
+        "name": "Bounty: The Outsider",
+        "image": "https://cards.scryfall.io/large/front/9/2/92d36a9a-c39c-41e6-9f31-4fcb5e820bd9.jpg?1712319285",
+        "bounty_effect": "At the beginning of your end step, if you cast a spell from anywhere other than your hand this turn, collect your reward."
+    },
+    {
+        "name": "Bounty: Paq, Fleeting Filcher",
+        "image": "https://cards.scryfall.io/large/front/f/e/fe1ca7a3-025f-4ab4-9764-c0b11e010f97.jpg?1773134328",
+        "bounty_effect": "At the beginning of your end step, if there are four or more card types among cards in your graveyard, collect your reward."
+    },
+    {
+        "name": "Bounty: Rissa \"Blades\" Lee",
+        "image": "https://cards.scryfall.io/large/front/1/f/1fbba46a-e9f1-43d7-820f-7c9c43244aa5.jpg?1712396718",
+        "bounty_effect": "At the beginning of your end step, if you cast an instant or sorcery spell this turn while you had two or more instant and/or sorcery cards in your graveyard, collect your reward."
+    },
+    {
+        "name": "Bounty: Sleepy Sovka",
+        "image": "https://cards.scryfall.io/large/front/5/9/590120cd-b072-4480-9652-f9dec7de4065.jpg?1712319352",
+        "bounty_effect": "At the beginning of your end step, if you cast no spells this turn, collect your reward."
+    },
+    {
+        "name": "Bounty: Squeakers the Sly",
+        "image": "https://cards.scryfall.io/large/front/2/5/25a24ce6-ad4d-46f7-9705-42318d1f41ff.jpg?1712396727",
+        "bounty_effect": "At the beginning of your end step, if a legendary creature you controlled attacked alone this turn, collect your reward."
+    },
+    {
+        "name": "Bounty: Vara Beth Hannifer",
+        "image": "https://cards.scryfall.io/large/front/4/c/4c6cd098-5a40-4031-af21-8746165ae442.jpg?1712319384",
+        "bounty_effect": "At the beginning of your end step, if the nearest opponent to your right as the turn began was dealt combat damage this turn, collect your reward."
+    }
+]

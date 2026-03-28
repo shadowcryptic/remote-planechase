@@ -6,39 +6,35 @@
   <title>Planechase Controller</title>
 
   <style>
-    :root{
+    :root {
       --bg: #0b0f14;
-      --card: rgba(255,255,255,0.06);
-      --card2: rgba(255,255,255,0.08);
       --text: rgba(255,255,255,0.92);
       --muted: rgba(255,255,255,0.65);
       --border: rgba(255,255,255,0.10);
       --shadow: 0 12px 40px rgba(0,0,0,0.45);
       --radius: 18px;
-
-      --accent: #7dd3fc;   /* light cyan */
-      --accent2: #a78bfa;  /* soft purple */
-      --danger: #fb7185;   /* pink-red */
+      --accent: #7dd3fc;
+      --accent2: #a78bfa;
+      --danger: #fb7185;
     }
 
     * { box-sizing: border-box; }
     html, body { height: 100%; }
-    body{
+
+    body {
       margin: 0;
-      background: radial-gradient(1200px 900px at 10% 0%, rgba(125,211,252,0.20), transparent 55%),
-                  radial-gradient(1200px 900px at 90% 10%, rgba(167,139,250,0.18), transparent 55%),
-                  var(--bg);
+      background:
+        radial-gradient(1200px 900px at 10% 0%, rgba(125,211,252,0.20), transparent 55%),
+        radial-gradient(1200px 900px at 90% 10%, rgba(167,139,250,0.18), transparent 55%),
+        var(--bg);
       color: var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-
-      /* iPhone safe areas */
-      padding: env(safe-area-inset-top) env(safe-area-inset-right)
-               env(safe-area-inset-bottom) env(safe-area-inset-left);
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
 
-    .wrap{
+    .wrap {
       min-height: 100%;
       display: flex;
       flex-direction: column;
@@ -46,7 +42,7 @@
       padding: 16px;
     }
 
-    header{
+    header {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -58,24 +54,14 @@
       backdrop-filter: blur(10px);
     }
 
-    .title{
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      line-height: 1.1;
-    }
-    .title h1{
+    .title h1 {
       margin: 0;
       font-size: 18px;
       font-weight: 700;
       letter-spacing: 0.2px;
     }
-    .title .sub{
-      font-size: 12px;
-      color: var(--muted);
-    }
 
-    .pill{
+    .pill {
       font-variant-numeric: tabular-nums;
       padding: 10px 12px;
       border-radius: 999px;
@@ -85,19 +71,15 @@
       min-width: 112px;
       text-align: center;
     }
-    .pill .big{
-      font-size: 14px;
-      font-weight: 700;
-      display: block;
-    }
-    .pill .small{
+
+    .pill .small {
       font-size: 11px;
       color: var(--muted);
       display: block;
       margin-top: 2px;
     }
 
-    .panel{
+    .panel {
       border: 1px solid var(--border);
       background: rgba(255,255,255,0.05);
       border-radius: var(--radius);
@@ -106,13 +88,13 @@
       backdrop-filter: blur(10px);
     }
 
-    .grid{
+    .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
 
-    button{
+    button {
       appearance: none;
       border: 1px solid rgba(255,255,255,0.14);
       background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05));
@@ -124,51 +106,99 @@
       box-shadow: 0 10px 24px rgba(0,0,0,0.35);
       transition: transform 0.05s ease, filter 0.15s ease, border-color 0.15s ease;
       width: 100%;
-      min-height: 64px; /* thumb-friendly */
+      min-height: 64px;
       touch-action: manipulation;
     }
 
-    button:active{
+    button:active {
       transform: translateY(1px) scale(0.99);
       filter: brightness(1.05);
     }
 
-    .btn-primary{
+    .btn-primary {
       border-color: rgba(125,211,252,0.35);
       background: linear-gradient(180deg, rgba(125,211,252,0.22), rgba(255,255,255,0.06));
     }
 
-    .btn-secondary{
+    .btn-secondary {
       border-color: rgba(167,139,250,0.35);
       background: linear-gradient(180deg, rgba(167,139,250,0.20), rgba(255,255,255,0.06));
     }
 
-    .btn-danger{
+    .btn-danger {
       border-color: rgba(251,113,133,0.45);
       background: linear-gradient(180deg, rgba(251,113,133,0.20), rgba(255,255,255,0.06));
     }
 
-    .row{
+    .mode-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .mode-btn.active {
+      border-color: rgba(125,211,252,0.8);
+      box-shadow:
+        0 10px 24px rgba(0,0,0,0.35),
+        inset 0 0 0 1px rgba(255,255,255,0.18);
+      filter: brightness(1.08);
+    }
+
+    .main-controls {
+      gap: 16px;
+    }
+
+    .btn-nav {
+      min-height: 150px;
+      font-size: 60px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      border-radius: 22px;
+      border-width: 2px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.3;
+      box-shadow:
+        0 18px 40px rgba(0,0,0,0.55),
+        inset 0 0 0 1px rgba(255,255,255,0.12);
+    }
+
+    .btn-nav span {
+      font-size: 30px;
+    }
+
+    .btn-prev {
+      border-color: rgba(167,139,250,0.7);
+      background: linear-gradient(180deg, rgba(167,139,250,0.40), rgba(255,255,255,0.10));
+    }
+
+    .btn-next {
+      border-color: rgba(125,211,252,0.9);
+      background: linear-gradient(180deg, rgba(125,211,252,0.55), rgba(255,255,255,0.12));
+    }
+
+    .btn-nav:active {
+      transform: translateY(2px) scale(0.985);
+      filter: brightness(1.15);
+    }
+
+    .row {
       display: flex;
       gap: 10px;
       margin-top: 12px;
     }
 
-    .row button{
+    .row button {
       min-height: 58px;
       font-size: 16px;
       font-weight: 700;
       padding: 14px 12px;
     }
 
-    .hint{
-      margin-top: 12px;
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.35;
-    }
-
-    .statusline{
+    .statusline {
       margin-top: 10px;
       font-size: 12px;
       color: var(--muted);
@@ -176,81 +206,6 @@
       justify-content: space-between;
       gap: 10px;
       flex-wrap: wrap;
-    }
-
-    /* Landscape: make buttons wider and reduce vertical padding */
-    @media (orientation: landscape){
-      .wrap{ padding: 12px; gap: 10px; }
-      header{ padding: 12px; }
-      button{ min-height: 58px; padding: 14px 12px; }
-      .panel{ padding: 12px; }
-      .title h1{ font-size: 17px; }
-    }
-    /* === Primary navigation buttons === */
-
-.main-controls{
-  gap: 16px;
-}
-
-.btn-nav{
-  min-height: 150px;          /* BIG tap target */
-  font-size: 60px;
-  font-weight: 800;
-  letter-spacing: 3px;
-
-  border-radius: 22px;
-  border-width: 2px;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  line-height:1.5;
-
-  box-shadow:
-    0 18px 40px rgba(0,0,0,0.55),
-    inset 0 0 0 1px rgba(255,255,255,0.12);
-}
-
-.btn-nav span{
-  font-size: 30px;
-}
-
-/* PREV — cooler tone */
-.btn-prev{
-  border-color: rgba(167,139,250,0.7);
-  background: linear-gradient(
-    180deg,
-    rgba(167,139,250,0.40),
-    rgba(255,255,255,0.10)
-  );
-}
-
-/* NEXT — brightest + most prominent */
-.btn-next{
-  border-color: rgba(125,211,252,0.9);
-  background: linear-gradient(
-    180deg,
-    rgba(125,211,252,0.55),
-    rgba(255,255,255,0.12)
-  );
-}
-
-/* Stronger press feedback */
-.btn-nav:active{
-  transform: translateY(2px) scale(0.985);
-  filter: brightness(1.15);
-}
-
-/* Landscape tweaks */
-@media (orientation: landscape){
-  .btn-nav{
-    min-height: 90px;
-    font-size: 24px;
-  }
-      .btn-nav span{
-        font-size: 26px;
-      }
     }
 
     .sources-wrap {
@@ -303,6 +258,19 @@
       height: 18px;
     }
 
+    .hidden {
+      display: none !important;
+    }
+
+    @media (orientation: landscape) {
+      .wrap { padding: 12px; gap: 10px; }
+      header { padding: 12px; }
+      button { min-height: 58px; padding: 14px 12px; }
+      .panel { padding: 12px; }
+      .title h1 { font-size: 17px; }
+      .btn-nav { min-height: 90px; font-size: 24px; }
+      .btn-nav span { font-size: 26px; }
+    }
   </style>
 </head>
 
@@ -312,34 +280,41 @@
       <div class="title">
         <h1>Planechase Controller</h1>
       </div>
-      
+
       <div class="pill" id="pill">
-        <span class="small" id="pos">—</span>
+        <span class="small" id="pos">-</span>
         <span class="small" id="room">room: my-room</span>
       </div>
     </header>
 
     <div class="panel">
+      <div class="mode-switch">
+        <button class="mode-btn btn-primary" id="modePlane" type="button" aria-pressed="true">Planechase</button>
+        <button class="mode-btn btn-secondary" id="modeBounty" type="button" aria-pressed="false">Bounty</button>
+      </div>
+
       <div class="grid main-controls">
         <button class="btn-nav btn-prev" id="prev" aria-label="Previous card">
-          <span>PREV</span>◀
+          <span id="prevLabel">PREV</span>
+          <span aria-hidden="true">&#9664;</span>
         </button>
 
         <button class="btn-nav btn-next" id="next" aria-label="Next card">
-          <span>NEXT<br>▶
+          <span id="nextLabel">NEXT</span>
+          <span aria-hidden="true">&#9654;</span>
         </button>
       </div>
 
       <div class="row">
-        <button class="btn-danger" id="reset" aria-label="Reset to first card">⟲ Reset</button>
-        <button id="fs">⛶ Fullscreen</button>
-        <button id="reshuffle" aria-label="Reshuffle order">🔀 Reshuffle</button>
+        <button class="btn-danger" id="reset" aria-label="Reset deck">&#10226; Reset</button>
+        <button id="fs">Fullscreen</button>
+        <button id="reshuffle" aria-label="Reshuffle order">&#128257; Reshuffle</button>
       </div>
-      <div class="row">
+      <div class="row" id="secondaryRow">
         <button id="toggleText" aria-label="Toggle clear text overlay">Text: Off</button>
         <button id="sourcesBtn" aria-label="Show source filters">Sources</button>
       </div>
-      <div class="sources-wrap">
+      <div class="sources-wrap" id="sourcesWrap">
         <div class="sources-panel" id="sourcesPanel">
           <div class="sources-actions">
             <button id="sourcesAll" type="button">All</button>
@@ -348,11 +323,6 @@
           <div class="source-list" id="sourceList"></div>
         </div>
       </div>
-
-      <!-- <div class="hint">
-        Tip: If you rotate your phone, the layout adapts. Reset goes to the start of the current shuffled order.
-        Reshuffle asks the display session to reshuffle (it clears <code>order</code> and sets <code>idx</code> to 0).
-      </div> -->
 
       <div class="statusline">
         <span id="status">Status: ready</span>
@@ -367,23 +337,91 @@
     const roomId = "my-room";
     const roomRef = doc(db, "rooms", roomId);
 
+    const MODE_PLANECHASE = "planechase";
+    const MODE_BOUNTY = "bounty";
+    const DEFAULT_BOUNTY_REWARD = 1;
+    const MODE_STATE_FIELD = {
+      [MODE_PLANECHASE]: "planeState",
+      [MODE_BOUNTY]: "bountyState",
+    };
+
     const statusEl = document.getElementById("status");
     const posEl = document.getElementById("pos");
     const netEl = document.getElementById("net");
+    const prevBtn = document.getElementById("prev");
+    const nextBtn = document.getElementById("next");
+    const prevLabelEl = document.getElementById("prevLabel");
+    const nextLabelEl = document.getElementById("nextLabel");
+    const resetBtn = document.getElementById("reset");
+    const reshuffleBtn = document.getElementById("reshuffle");
+    const fsBtn = document.getElementById("fs");
     const textBtn = document.getElementById("toggleText");
+    const modePlaneBtn = document.getElementById("modePlane");
+    const modeBountyBtn = document.getElementById("modeBounty");
+    const secondaryRowEl = document.getElementById("secondaryRow");
+    const sourcesWrapEl = document.getElementById("sourcesWrap");
     const sourcesBtn = document.getElementById("sourcesBtn");
     const sourcesPanel = document.getElementById("sourcesPanel");
     const sourceListEl = document.getElementById("sourceList");
     const sourcesAllBtn = document.getElementById("sourcesAll");
     const sourcesNoneBtn = document.getElementById("sourcesNone");
+
     document.getElementById("room").textContent = "room: " + roomId;
 
     let allSources = [];
     let currentSelectedSources = [];
     let ignoreCheckboxSync = false;
+    let currentMode = MODE_PLANECHASE;
 
     function setStatus(text) {
       statusEl.textContent = "Status: " + text;
+    }
+
+    function normalizeMode(mode) {
+      return mode === MODE_BOUNTY ? MODE_BOUNTY : MODE_PLANECHASE;
+    }
+
+    function getStateField(mode) {
+      return MODE_STATE_FIELD[normalizeMode(mode)];
+    }
+
+    function getModeState(data, mode) {
+      const raw = data?.[getStateField(mode)];
+      return raw && typeof raw === "object" ? raw : {};
+    }
+
+    function getModePositionText(mode, data) {
+      const state = getModeState(data, mode);
+      const idx = typeof state.idx === "number" ? state.idx : 0;
+      const order = Array.isArray(state.order) ? state.order : [];
+      return order.length > 0 ? idx + " / " + order.length : idx + " / ?";
+    }
+
+    function updateModeUI(mode, data = null) {
+      currentMode = normalizeMode(mode);
+      const isBounty = currentMode === MODE_BOUNTY;
+
+      prevLabelEl.textContent = isBounty ? "PASS" : "PREV";
+      nextLabelEl.textContent = isBounty ? "CLAIM" : "NEXT";
+      prevBtn.setAttribute("aria-label", isBounty ? "Pass bounty reward tier" : "Previous card");
+      nextBtn.setAttribute("aria-label", isBounty ? "Claim bounty reward and move to the next card" : "Next card");
+      resetBtn.setAttribute("aria-label", isBounty ? "Reset bounty deck" : "Reset planar deck");
+      reshuffleBtn.setAttribute("aria-label", isBounty ? "Reshuffle bounty order" : "Reshuffle planar order");
+
+      modePlaneBtn.classList.toggle("active", !isBounty);
+      modePlaneBtn.setAttribute("aria-pressed", String(!isBounty));
+      modeBountyBtn.classList.toggle("active", isBounty);
+      modeBountyBtn.setAttribute("aria-pressed", String(isBounty));
+
+      secondaryRowEl.classList.toggle("hidden", isBounty);
+      sourcesWrapEl.classList.toggle("hidden", isBounty);
+      if (isBounty) {
+        sourcesPanel.classList.remove("open");
+      }
+
+      if (data) {
+        posEl.textContent = getModePositionText(currentMode, data);
+      }
     }
 
     async function loadAllSources() {
@@ -424,9 +462,9 @@
 
     function syncSourceChecksFromState() {
       ignoreCheckboxSync = true;
-      const set = new Set(currentSelectedSources);
+      const selected = new Set(currentSelectedSources);
       for (const cb of sourceListEl.querySelectorAll('input[type="checkbox"]')) {
-        cb.checked = set.has(cb.value);
+        cb.checked = selected.has(cb.value);
       }
       ignoreCheckboxSync = false;
     }
@@ -469,8 +507,7 @@
           const snap = await tx.get(roomRef);
           if (!snap.exists()) return;
           const data = snap.data();
-          const current = !!data.showText;
-          tx.set(roomRef, { showText: !current }, { merge: true });
+          tx.set(roomRef, { showText: !data.showText }, { merge: true });
         });
         setStatus("synced");
       } catch (e) {
@@ -478,63 +515,50 @@
       }
     }
 
-    function updateOnlineStatus(){
+    function updateOnlineStatus() {
       netEl.textContent = navigator.onLine ? "Online" : "Offline";
     }
+
     window.addEventListener("online", updateOnlineStatus);
     window.addEventListener("offline", updateOnlineStatus);
     updateOnlineStatus();
 
-
-const fsBtn = document.getElementById("fs");
-
-async function toggleFullscreen() {
-  try {
-    if (!document.fullscreenElement) {
-      await document.documentElement.requestFullscreen();
-
-      // Optional: lock orientation (may fail silently)
-      if (screen.orientation && screen.orientation.lock) {
-        try {
-          await screen.orientation.lock(screen.orientation.type);
-        } catch (_) {}
+    async function toggleFullscreen() {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+          if (screen.orientation && screen.orientation.lock) {
+            try {
+              await screen.orientation.lock(screen.orientation.type);
+            } catch (_) {}
+          }
+          fsBtn.textContent = "Exit Fullscreen";
+        } else {
+          await document.exitFullscreen();
+          fsBtn.textContent = "Fullscreen";
+        }
+      } catch (e) {
+        console.warn("Fullscreen toggle failed:", e);
       }
-
-      fsBtn.textContent = "⛶ Exit Fullscreen";
-    } else {
-      await document.exitFullscreen();
-      fsBtn.textContent = "⛶ Fullscreen";
     }
-  } catch (e) {
-    console.warn("Fullscreen toggle failed:", e);
-  }
-}
 
-fsBtn.addEventListener("click", toggleFullscreen);
+    fsBtn.addEventListener("click", toggleFullscreen);
 
-// Keep button label in sync if user exits via gesture
-document.addEventListener("fullscreenchange", () => {
-  if (!document.fullscreenElement) {
-    fsBtn.textContent = "⛶ Fullscreen";
-  }
-});
+    document.addEventListener("fullscreenchange", () => {
+      if (!document.fullscreenElement) {
+        fsBtn.textContent = "Fullscreen";
+      }
+    });
 
-
-    // Live position pill (idx / order length)
     onSnapshot(roomRef, (snap) => {
       if (!snap.exists()) {
-        posEl.textContent = "—";
+        posEl.textContent = "-";
         setStatus("room not found");
         return;
       }
+
       const data = snap.data();
-      const idx = typeof data.idx === "number" ? data.idx : 0;
-      const order = Array.isArray(data.order) ? data.order : [];
-      if (order.length > 0) {
-        posEl.textContent = (idx) + " / " + order.length;
-      } else {
-        posEl.textContent = (idx) + " / ?";
-      }
+      updateModeUI(data.mode, data);
 
       const showText = !!data.showText;
       textBtn.textContent = "Text: " + (showText ? "On" : "Off");
@@ -549,20 +573,86 @@ document.addEventListener("fullscreenchange", () => {
     });
 
     async function step(delta) {
-      setStatus("sending…");
+      setStatus("sending...");
       try {
         await runTransaction(db, async (tx) => {
           const snap = await tx.get(roomRef);
           if (!snap.exists()) return;
 
           const data = snap.data();
-          const order = Array.isArray(data.order) ? data.order : [];
-          const min = -1;
-          const max = Math.max(0, order.length - 1);
-          const idx = typeof data.idx === "number" ? data.idx : 0;
+          const mode = normalizeMode(data.mode);
+          const stateField = getStateField(mode);
+          const modeState = getModeState(data, mode);
+          const order = Array.isArray(modeState.order) ? modeState.order : [];
+          const idx = typeof modeState.idx === "number" ? modeState.idx : 0;
+          const nextIdx = Math.min(Math.max(0, order.length - 1), Math.max(-1, idx + delta));
 
-          const nextIdx = Math.min(max, Math.max(min, idx + delta));
-          tx.set(roomRef, { idx: nextIdx }, { merge: true });
+          tx.set(roomRef, { [stateField]: { ...modeState, idx: nextIdx } }, { merge: true });
+        });
+        setStatus("synced");
+      } catch (e) {
+        setStatus("error: " + e.message);
+      }
+    }
+
+    async function passBounty() {
+      setStatus("sending...");
+      try {
+        await runTransaction(db, async (tx) => {
+          const snap = await tx.get(roomRef);
+          if (!snap.exists()) return;
+
+          const data = snap.data();
+          if (normalizeMode(data.mode) !== MODE_BOUNTY) return;
+
+          const stateField = getStateField(MODE_BOUNTY);
+          const modeState = getModeState(data, MODE_BOUNTY);
+          const rewardTier = typeof modeState.rewardTier === "number" ? modeState.rewardTier : DEFAULT_BOUNTY_REWARD;
+
+          tx.set(
+            roomRef,
+            {
+              [stateField]: {
+                ...modeState,
+                rewardTier: Math.min(4, rewardTier + 1),
+              },
+            },
+            { merge: true },
+          );
+        });
+        setStatus("synced");
+      } catch (e) {
+        setStatus("error: " + e.message);
+      }
+    }
+
+    async function claimBounty() {
+      setStatus("sending...");
+      try {
+        await runTransaction(db, async (tx) => {
+          const snap = await tx.get(roomRef);
+          if (!snap.exists()) return;
+
+          const data = snap.data();
+          if (normalizeMode(data.mode) !== MODE_BOUNTY) return;
+
+          const stateField = getStateField(MODE_BOUNTY);
+          const modeState = getModeState(data, MODE_BOUNTY);
+          const order = Array.isArray(modeState.order) ? modeState.order : [];
+          const idx = typeof modeState.idx === "number" ? modeState.idx : 0;
+          const nextIdx = Math.min(Math.max(0, order.length - 1), Math.max(-1, idx + 1));
+
+          tx.set(
+            roomRef,
+            {
+              [stateField]: {
+                ...modeState,
+                idx: nextIdx,
+                rewardTier: DEFAULT_BOUNTY_REWARD,
+              },
+            },
+            { merge: true },
+          );
         });
         setStatus("synced");
       } catch (e) {
@@ -571,12 +661,22 @@ document.addEventListener("fullscreenchange", () => {
     }
 
     async function reset() {
-      setStatus("resetting…");
+      setStatus("resetting...");
       try {
         await runTransaction(db, async (tx) => {
           const snap = await tx.get(roomRef);
           if (!snap.exists()) return;
-          tx.set(roomRef, { idx: -1 }, { merge: true });
+
+          const data = snap.data();
+          const mode = normalizeMode(data.mode);
+          const stateField = getStateField(mode);
+          const modeState = getModeState(data, mode);
+          const patch = { ...modeState, idx: -1 };
+          if (mode === MODE_BOUNTY) {
+            patch.rewardTier = DEFAULT_BOUNTY_REWARD;
+          }
+
+          tx.set(roomRef, { [stateField]: patch }, { merge: true });
         });
         setStatus("synced");
       } catch (e) {
@@ -584,15 +684,23 @@ document.addEventListener("fullscreenchange", () => {
       }
     }
 
-    // This asks the display side to reshuffle by clearing the order.
-    // Your display page already has logic to regenerate order when it sees mismatch/empty.
     async function reshuffle() {
-      setStatus("reshuffling…");
+      setStatus("reshuffling...");
       try {
         await runTransaction(db, async (tx) => {
           const snap = await tx.get(roomRef);
           if (!snap.exists()) return;
-          tx.set(roomRef, { order: [], idx: 0, forceReloadAt: Date.now() }, { merge: true });
+
+          const data = snap.data();
+          const mode = normalizeMode(data.mode);
+          const stateField = getStateField(mode);
+          const modeState = getModeState(data, mode);
+          const patch = { ...modeState, order: [], idx: 0 };
+          if (mode === MODE_BOUNTY) {
+            patch.rewardTier = DEFAULT_BOUNTY_REWARD;
+          }
+
+          tx.set(roomRef, { [stateField]: patch, forceReloadAt: Date.now() }, { merge: true });
         });
         setStatus("synced");
       } catch (e) {
@@ -600,27 +708,63 @@ document.addEventListener("fullscreenchange", () => {
       }
     }
 
-    // Big buttons
-    document.getElementById("prev").addEventListener("click", () => step(-1));
-    document.getElementById("next").addEventListener("click", () => step(1));
-    document.getElementById("reset").addEventListener("click", () => reset());
-    document.getElementById("reshuffle").addEventListener("click", () => reshuffle());
+    async function switchMode(mode) {
+      setStatus("switching mode...");
+      try {
+        await runTransaction(db, async (tx) => {
+          const snap = await tx.get(roomRef);
+          if (!snap.exists()) return;
+          tx.set(roomRef, { mode: normalizeMode(mode) }, { merge: true });
+        });
+        setStatus("synced");
+      } catch (e) {
+        setStatus("error: " + e.message);
+      }
+    }
+
+    prevBtn.addEventListener("click", () => {
+      if (currentMode === MODE_BOUNTY) {
+        passBounty();
+      } else {
+        step(-1);
+      }
+    });
+
+    nextBtn.addEventListener("click", () => {
+      if (currentMode === MODE_BOUNTY) {
+        claimBounty();
+      } else {
+        step(1);
+      }
+    });
+
+    modePlaneBtn.addEventListener("click", () => switchMode(MODE_PLANECHASE));
+    modeBountyBtn.addEventListener("click", () => switchMode(MODE_BOUNTY));
+    resetBtn.addEventListener("click", reset);
+    reshuffleBtn.addEventListener("click", reshuffle);
     textBtn.addEventListener("click", toggleShowText);
 
     sourcesBtn.addEventListener("click", () => {
       sourcesPanel.classList.toggle("open");
     });
+
     sourcesAllBtn.addEventListener("click", async () => {
       await setSelectedSources(allSources.slice());
     });
+
     sourcesNoneBtn.addEventListener("click", async () => {
       await setSelectedSources([]);
     });
 
-    // Optional: hardware keyboard support (nice on desktop)
     window.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowLeft") step(-1);
-      if (e.key === "ArrowRight") step(1);
+      if (e.key === "ArrowLeft") {
+        if (currentMode === MODE_BOUNTY) passBounty();
+        else step(-1);
+      }
+      if (e.key === "ArrowRight") {
+        if (currentMode === MODE_BOUNTY) claimBounty();
+        else step(1);
+      }
       if (e.key === "Home") reset();
     });
 
@@ -631,7 +775,8 @@ document.addEventListener("fullscreenchange", () => {
     } catch (e) {
       setStatus("source load error: " + e.message);
     }
+
+    updateModeUI(MODE_PLANECHASE);
   </script>
 </body>
 </html>
-

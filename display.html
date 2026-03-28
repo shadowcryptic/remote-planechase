@@ -6,6 +6,18 @@
     <title>Planechase Display</title>
 
     <style>
+      :root {
+        --deck-width: 680px;
+        --deck-height: 488px;
+        --frame-width: 530px;
+        --frame-height: 730px;
+        --frame-rotation: 90deg;
+        --card-rotation: 90deg;
+        --card-max-width: 488px;
+        --card-max-height: 680px;
+        --slide-distance: 500px;
+      }
+
       html,
       body {
         margin: 0;
@@ -19,6 +31,18 @@
         place-items: center;
       }
 
+      body.mode-bounty {
+        --deck-width: 530px;
+        --deck-height: 730px;
+        --frame-width: 530px;
+        --frame-height: 730px;
+        --frame-rotation: 0deg;
+        --card-rotation: 0deg;
+        --card-max-width: 530px;
+        --card-max-height: 730px;
+        --slide-distance: 380px;
+      }
+
       .stage {
         position: relative;
         z-index: 5;
@@ -29,9 +53,9 @@
         position: absolute;
         left: 50%;
         top: 50%;
-        width: 530px;
-        height: 730px;
-        transform: translate(-50%, -50%) rotate(90deg) scale(0.98);
+        width: var(--frame-width);
+        height: var(--frame-height);
+        transform: translate(-50%, -50%) rotate(var(--frame-rotation)) scale(0.98);
         border-radius: 22px;
         border: 2px solid rgba(255, 110, 110, 0.5);
         box-shadow:
@@ -47,8 +71,8 @@
       }
 
       .deck {
-        width: 680px;
-        height: 488px;
+        width: var(--deck-width);
+        height: var(--deck-height);
         position: relative;
         transition: opacity 220ms ease, filter 220ms ease;
       }
@@ -57,9 +81,9 @@
         position: absolute;
         top: 50%;
         left: 50%;
-        transform: translate(-50%, -50%) rotate(90deg);
-        max-width: 488px;
-        max-height: 680px;
+        transform: translate(-50%, -50%) rotate(var(--card-rotation));
+        max-width: var(--card-max-width);
+        max-height: var(--card-max-height);
         width: auto;
         height: auto;
         object-fit: contain;
@@ -72,44 +96,44 @@
 
       .top {
         z-index: 2;
-        transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(0);
+        transform: translate(-50%, -50%) rotate(var(--card-rotation)) translateX(0) translateZ(0);
       }
 
       .under {
         z-index: 1;
-        transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(0px);
+        transform: translate(-50%, -50%) rotate(var(--card-rotation)) translateX(0) translateZ(0px);
       }
 
       .top.to-right {
         transition: transform 760ms cubic-bezier(0.2, 0.8, 0.2, 1);
-        transform: translate(-50%, -50%) rotate(90deg) translateX(500px) translateZ(0);
+        transform: translate(-50%, -50%) rotate(var(--card-rotation)) translateX(var(--slide-distance)) translateZ(0);
       }
 
       .under.park-right {
         transition: none !important;
-        transform: translate(-50%, -50%) rotate(90deg) translateX(500px) translateZ(0px);
+        transform: translate(-50%, -50%) rotate(var(--card-rotation)) translateX(var(--slide-distance)) translateZ(0px);
       }
 
       .under.return-center {
         transition: transform 1320ms cubic-bezier(0.2, 0.8, 0.2, 1);
-        transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(0px);
+        transform: translate(-50%, -50%) rotate(var(--card-rotation)) translateX(0) translateZ(0px);
       }
 
       .under.under-to-right {
         transition: transform 760ms cubic-bezier(0.2, 0.8, 0.2, 1);
-        transform: translate(-50%, -50%) rotate(90deg) translateX(500px) translateZ(0px);
+        transform: translate(-50%, -50%) rotate(var(--card-rotation)) translateX(var(--slide-distance)) translateZ(0px);
       }
 
       .top.park-right-top {
         transition: none !important;
         z-index: 3;
-        transform: translate(-50%, -50%) rotate(90deg) translateX(500px) translateZ(0);
+        transform: translate(-50%, -50%) rotate(var(--card-rotation)) translateX(var(--slide-distance)) translateZ(0);
       }
 
       .top.return-center-top {
         transition: transform 820ms cubic-bezier(0.2, 0.8, 0.2, 1);
         z-index: 3;
-        transform: translate(-50%, -50%) rotate(90deg) translateX(0) translateZ(0);
+        transform: translate(-50%, -50%) rotate(var(--card-rotation)) translateX(0) translateZ(0);
       }
 
       .text-overlay {
@@ -177,6 +201,32 @@
         letter-spacing: 0.08em;
         color: rgba(255, 255, 255, 0.68);
         margin-bottom: 4px;
+      }
+
+      .reward-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .reward-row {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+        align-items: start;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .reward-row.active {
+        background: rgba(125, 211, 252, 0.16);
+        border-color: rgba(125, 211, 252, 0.45);
+      }
+
+      .reward-tier {
+        font-weight: 700;
+        color: rgba(255,255,255,0.86);
       }
 
       .phenomenon-flash {
@@ -296,15 +346,15 @@
       @keyframes phenomenonRingPulse {
         0% {
           opacity: 0.24;
-          transform: translate(-50%, -50%) rotate(90deg) scale(0.97);
+          transform: translate(-50%, -50%) rotate(var(--frame-rotation)) scale(0.97);
         }
         45% {
           opacity: 0.72;
-          transform: translate(-50%, -50%) rotate(90deg) scale(1.02);
+          transform: translate(-50%, -50%) rotate(var(--frame-rotation)) scale(1.02);
         }
         100% {
           opacity: 0.24;
-          transform: translate(-50%, -50%) rotate(90deg) scale(0.97);
+          transform: translate(-50%, -50%) rotate(var(--frame-rotation)) scale(0.97);
         }
       }
 
@@ -356,8 +406,8 @@
     </style>
   </head>
 
-  <body>
-    <div id="status">Booting…</div>
+  <body class="mode-planechase">
+    <div id="status">Booting...</div>
     <div id="phenomenonParticlesBack" class="phenomenon-particles-back" aria-hidden="true"></div>
     <div id="phenomenonFlash" class="phenomenon-flash" aria-hidden="true"></div>
     <div id="phenomenonParticlesFront" class="phenomenon-particles-front" aria-hidden="true"></div>
@@ -371,10 +421,10 @@
         <div class="text-card">
           <h2 id="textName" class="text-title">No card</h2>
           <div id="textType" class="text-type"></div>
-          <div class="text-label">Main Effect</div>
-          <div id="textMain" class="text-block">-</div>
-          <div class="text-label">Chaos Effect</div>
-          <div id="textChaos" class="text-block">-</div>
+          <div id="primaryLabel" class="text-label">Main Effect</div>
+          <div id="textPrimary" class="text-block">-</div>
+          <div id="secondaryLabel" class="text-label">Chaos Effect</div>
+          <div id="textSecondary" class="text-block">-</div>
         </div>
       </div>
     </div>
@@ -388,6 +438,20 @@
         serverTimestamp,
       } from "./common.js";
 
+      const MODE_PLANECHASE = "planechase";
+      const MODE_BOUNTY = "bounty";
+      const DEFAULT_BOUNTY_REWARD = 1;
+      const BOUNTY_REWARDS = [
+        "Create a Treasure token.",
+        "Create two Treasure tokens.",
+        "Create two Treasure tokens or draw a card.",
+        "Create two Treasure tokens and draw a card.",
+      ];
+      const MODE_STATE_FIELD = {
+        [MODE_PLANECHASE]: "planeState",
+        [MODE_BOUNTY]: "bountyState",
+      };
+
       const statusEl = document.getElementById("status");
       const roomRef = doc(db, "rooms", "my-room");
 
@@ -395,24 +459,44 @@
       const underImg = document.getElementById("cardUnder");
       const textNameEl = document.getElementById("textName");
       const textTypeEl = document.getElementById("textType");
-      const textMainEl = document.getElementById("textMain");
-      const textChaosEl = document.getElementById("textChaos");
+      const primaryLabelEl = document.getElementById("primaryLabel");
+      const secondaryLabelEl = document.getElementById("secondaryLabel");
+      const textPrimaryEl = document.getElementById("textPrimary");
+      const textSecondaryEl = document.getElementById("textSecondary");
       const phenomenonParticlesBackEl = document.getElementById("phenomenonParticlesBack");
       const phenomenonFlashEl = document.getElementById("phenomenonFlash");
       const phenomenonParticlesFrontEl = document.getElementById("phenomenonParticlesFront");
 
-      let lastForceReloadAt = undefined;
       const BACK_URL =
         "https://backs.scryfall.io/large/7/8/7840c131-f96b-4700-9347-2215c43156e6.jpg";
-      let allCards = [];
-      let filteredCards = [];
-      let deckUrls = [];
-      let activeFilterSig = "";
+      const deckState = {
+        [MODE_PLANECHASE]: {
+          path: "./deck.json",
+          allCards: [],
+          filteredCards: [],
+          deckUrls: [],
+          activeFilterSig: "",
+          lastShownOracleId: "",
+        },
+        [MODE_BOUNTY]: {
+          path: "./bounty_deck.json",
+          allCards: [],
+          filteredCards: [],
+          deckUrls: [],
+          activeFilterSig: "__BOUNTY__",
+          lastShownOracleId: "",
+        },
+      };
+
+      let currentMode = MODE_PLANECHASE;
       let currentUrl = "";
       let animating = false;
       let lastIdx = null;
-      let repairInFlight = false;
-      let lastShownOracleId = "";
+      let lastForceReloadAt = undefined;
+      let repairInFlight = {
+        [MODE_PLANECHASE]: false,
+        [MODE_BOUNTY]: false,
+      };
 
       // Fill these URLs with your icon image paths.
       const SYMBOL_ICONS = {
@@ -436,16 +520,29 @@
         statusEl.textContent = text;
       }
 
-      async function loadDeck() {
-        const res = await fetch("./deck.json", { cache: "no-store" });
-        if (!res.ok) throw new Error("Failed to load deck.json");
-        const data = await res.json();
-        return Array.isArray(data) ? data : Array.isArray(data.deck) ? data.deck : [];
+      function normalizeMode(mode) {
+        return mode === MODE_BOUNTY ? MODE_BOUNTY : MODE_PLANECHASE;
       }
 
-      function isPlane(card) {
-        const type = typeof card?.plane_type === "string" ? card.plane_type : "";
-        return type.toLowerCase() === "plane";
+      function getStateField(mode) {
+        return MODE_STATE_FIELD[normalizeMode(mode)];
+      }
+
+      function getModeState(data, mode) {
+        const raw = data?.[getStateField(mode)];
+        return raw && typeof raw === "object" ? raw : {};
+      }
+
+      function normalizeRewardTier(value) {
+        const tier = typeof value === "number" ? value : DEFAULT_BOUNTY_REWARD;
+        return Math.max(1, Math.min(4, tier));
+      }
+
+      async function loadDeck(path) {
+        const res = await fetch(path, { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to load " + path);
+        const data = await res.json();
+        return Array.isArray(data) ? data : Array.isArray(data.deck) ? data.deck : [];
       }
 
       function buildFilterSig(selectedSources) {
@@ -453,26 +550,13 @@
         return JSON.stringify(sorted);
       }
 
-      function getFilteredCards(selectedSources) {
-        const planes = allCards;
-        if (!Array.isArray(selectedSources)) return planes;
+      function getFilteredCards(mode, selectedSources) {
+        const cards = deckState[mode].allCards;
+        if (mode === MODE_BOUNTY) return cards.slice();
+        if (!Array.isArray(selectedSources)) return cards;
         if (selectedSources.length === 0) return [];
         const allowed = new Set(selectedSources);
-        return planes.filter((card) => allowed.has(card.source));
-      }
-
-      function renderTextCard(card) {
-        if (!card) {
-          textNameEl.textContent = "No card";
-          textTypeEl.textContent = "";
-          textMainEl.innerHTML = "-";
-          textChaosEl.innerHTML = "-";
-          return;
-        }
-        textNameEl.textContent = card.name || "Unnamed";
-        textTypeEl.textContent = card.plane_type || "Plane";
-        textMainEl.innerHTML = formatRulesTextWithSymbols(card.main_effect || "-");
-        textChaosEl.innerHTML = formatRulesTextWithSymbols(card.chaos_effect || "-");
+        return cards.filter((card) => allowed.has(card.source));
       }
 
       function escapeHtml(text) {
@@ -494,22 +578,61 @@
         });
       }
 
-      function applyFilteredCards(selectedSources) {
-        const normalizedSources = Array.isArray(selectedSources) ? selectedSources : null;
-        const sig = normalizedSources === null ? "__ALL__" : buildFilterSig(normalizedSources);
-        if (sig === activeFilterSig) return false;
+      function renderRewardList(rewardTier) {
+        return `<div class="reward-list">${BOUNTY_REWARDS.map((reward, index) => {
+          const tier = index + 1;
+          const activeClass = tier === rewardTier ? " active" : "";
+          return `<div class="reward-row${activeClass}"><div class="reward-tier">${tier}.</div><div>${formatRulesTextWithSymbols(reward)}</div></div>`;
+        }).join("")}</div>`;
+      }
 
-        activeFilterSig = sig;
-        filteredCards = getFilteredCards(normalizedSources);
-        deckUrls = filteredCards.map((card) => card.image).filter(Boolean);
-        currentUrl = "";
-        lastIdx = null;
-        lastShownOracleId = "";
-        setPhenomenonActive(false);
-        clearCards();
-        renderTextCard(null);
-        setStatus("Deck loaded: " + deckUrls.length + " cards");
+      function renderTextCard(mode, card, rewardTier) {
+        if (!card) {
+          textNameEl.textContent = "No card";
+          textTypeEl.textContent = "";
+          primaryLabelEl.textContent = mode === MODE_BOUNTY ? "Bounty" : "Main Effect";
+          secondaryLabelEl.textContent = mode === MODE_BOUNTY ? "Rewards" : "Chaos Effect";
+          textPrimaryEl.innerHTML = "-";
+          textSecondaryEl.innerHTML = "-";
+          return;
+        }
+
+        textNameEl.textContent = card.name || "Unnamed";
+
+        if (mode === MODE_BOUNTY) {
+          textTypeEl.textContent = "Bounty";
+          primaryLabelEl.textContent = "Bounty";
+          secondaryLabelEl.textContent = "Rewards";
+          textPrimaryEl.innerHTML = formatRulesTextWithSymbols(card.bounty_effect || "-");
+          textSecondaryEl.innerHTML = renderRewardList(normalizeRewardTier(rewardTier));
+          return;
+        }
+
+        textTypeEl.textContent = card.plane_type || "Plane";
+        primaryLabelEl.textContent = "Main Effect";
+        secondaryLabelEl.textContent = "Chaos Effect";
+        textPrimaryEl.innerHTML = formatRulesTextWithSymbols(card.main_effect || "-");
+        textSecondaryEl.innerHTML = formatRulesTextWithSymbols(card.chaos_effect || "-");
+      }
+
+      function applyDeck(mode, selectedSources) {
+        const state = deckState[mode];
+        const normalizedSources = Array.isArray(selectedSources) ? selectedSources : null;
+        const sig = mode === MODE_BOUNTY
+          ? "__BOUNTY__"
+          : (normalizedSources === null ? "__ALL__" : buildFilterSig(normalizedSources));
+        if (sig === state.activeFilterSig && state.filteredCards.length) return false;
+
+        state.activeFilterSig = sig;
+        state.filteredCards = getFilteredCards(mode, normalizedSources);
+        state.deckUrls = state.filteredCards.map((card) => card.image).filter(Boolean);
+        state.lastShownOracleId = "";
         return true;
+      }
+
+      function applyDisplayMode(mode) {
+        document.body.classList.toggle("mode-planechase", mode === MODE_PLANECHASE);
+        document.body.classList.toggle("mode-bounty", mode === MODE_BOUNTY);
       }
 
       function applyTextMode(enabled) {
@@ -554,32 +677,40 @@
         return a;
       }
 
-      async function ensureOrderMatchesDeck() {
-        if (!deckUrls.length || repairInFlight) return;
-        repairInFlight = true;
+      async function ensureOrderMatchesDeck(mode) {
+        const state = deckState[mode];
+        if (!state.deckUrls.length || repairInFlight[mode]) return;
+        repairInFlight[mode] = true;
         try {
           await runTransaction(db, async (tx) => {
             const snap = await tx.get(roomRef);
             const existing = snap.exists() ? snap.data() : {};
-            const order = Array.isArray(existing.order) ? existing.order : [];
+            const modeState = getModeState(existing, mode);
+            const order = Array.isArray(modeState.order) ? modeState.order : [];
             const existingFilterSig =
-              typeof existing.deckFilterSig === "string" ? existing.deckFilterSig : "";
+              typeof modeState.deckFilterSig === "string" ? modeState.deckFilterSig : "";
 
-            if (order.length !== deckUrls.length || existingFilterSig !== activeFilterSig) {
-              tx.set(
-                roomRef,
-                {
-                  order: shuffledIndices(deckUrls.length),
-                  idx: -1,
-                  deckFilterSig: activeFilterSig,
-                  shuffledAt: serverTimestamp(),
-                },
-                { merge: true },
-              );
+            const needsRepair = order.length !== state.deckUrls.length
+              || (mode === MODE_PLANECHASE && existingFilterSig !== state.activeFilterSig);
+            if (!needsRepair) return;
+
+            const patch = {
+              ...modeState,
+              order: shuffledIndices(state.deckUrls.length),
+              idx: -1,
+              shuffledAt: serverTimestamp(),
+            };
+
+            if (mode === MODE_PLANECHASE) {
+              patch.deckFilterSig = state.activeFilterSig;
+            } else {
+              patch.rewardTier = normalizeRewardTier(modeState.rewardTier);
             }
+
+            tx.set(roomRef, { [getStateField(mode)]: patch }, { merge: true });
           });
         } finally {
-          repairInFlight = false;
+          repairInFlight[mode] = false;
         }
       }
 
@@ -662,6 +793,15 @@
         resetClasses();
       }
 
+      function resetForModeSwitch(mode) {
+        currentMode = mode;
+        currentUrl = "";
+        lastIdx = null;
+        clearCards();
+        renderTextCard(mode, null, DEFAULT_BOUNTY_REWARD);
+        setPhenomenonActive(false);
+      }
+
       async function animateNext(nextUrl, preloadNextUrl) {
         const oldUrl = currentUrl;
         currentUrl = nextUrl;
@@ -722,9 +862,11 @@
         }
       }
 
-      allCards = await loadDeck();
-      applyFilteredCards(null);
-      await ensureOrderMatchesDeck();
+      deckState[MODE_PLANECHASE].allCards = await loadDeck(deckState[MODE_PLANECHASE].path);
+      deckState[MODE_BOUNTY].allCards = await loadDeck(deckState[MODE_BOUNTY].path);
+      applyDeck(MODE_PLANECHASE, null);
+      applyDeck(MODE_BOUNTY, null);
+      await ensureOrderMatchesDeck(MODE_PLANECHASE);
 
       onSnapshot(
         roomRef,
@@ -736,16 +878,23 @@
           }
 
           const data = snap.data();
-          const selectedSources = Array.isArray(data.selectedSources)
-            ? data.selectedSources
-            : null;
+          const mode = normalizeMode(data.mode);
+          const selectedSources = Array.isArray(data.selectedSources) ? data.selectedSources : null;
           const showTextFromDoc = !!data.showText;
+          const rewardTier = normalizeRewardTier(getModeState(data, MODE_BOUNTY).rewardTier);
 
           applyTextMode(showTextFromDoc);
+          applyDisplayMode(mode);
 
-          const filterChanged = applyFilteredCards(selectedSources);
-          if (filterChanged) {
-            ensureOrderMatchesDeck().catch((e) => setStatus("Order repair error: " + e.message));
+          const planeFilterChanged = applyDeck(MODE_PLANECHASE, selectedSources);
+          applyDeck(MODE_BOUNTY, null);
+
+          if (mode !== currentMode) {
+            resetForModeSwitch(mode);
+          }
+
+          if (planeFilterChanged && mode === MODE_PLANECHASE) {
+            ensureOrderMatchesDeck(MODE_PLANECHASE).catch((e) => setStatus("Order repair error: " + e.message));
           }
 
           const forceReloadAt =
@@ -758,52 +907,70 @@
           }
           lastForceReloadAt = forceReloadAt;
 
-          const order = Array.isArray(data.order) ? data.order : [];
-          const idx = typeof data.idx === "number" ? data.idx : 0;
+          const activeDeck = deckState[mode];
+          const modeState = getModeState(data, mode);
+          const order = Array.isArray(modeState.order) ? modeState.order : [];
+          const idx = typeof modeState.idx === "number" ? modeState.idx : 0;
+          const orderFilterSig =
+            typeof modeState.deckFilterSig === "string" ? modeState.deckFilterSig : "";
 
-          if (!deckUrls.length) {
+          if (!activeDeck.deckUrls.length) {
+            renderTextCard(mode, null, rewardTier);
             setPhenomenonActive(false);
+            setStatus("Deck loaded: 0 cards");
             return;
           }
-          if (order.length !== deckUrls.length) {
+          if (
+            order.length !== activeDeck.deckUrls.length
+            || (mode === MODE_PLANECHASE && orderFilterSig !== activeDeck.activeFilterSig)
+          ) {
             setPhenomenonActive(false);
             setStatus("Repairing order...");
-            ensureOrderMatchesDeck().catch((e) => setStatus("Order repair error: " + e.message));
+            ensureOrderMatchesDeck(mode).catch((e) => setStatus("Order repair error: " + e.message));
             return;
           }
 
           if (idx < 0) {
-            setStatus("idx " + idx + " / " + order.length);
             const firstDeckIndex = order[0];
             const firstUrl =
-              typeof firstDeckIndex === "number" ? deckUrls[firstDeckIndex] : null;
+              typeof firstDeckIndex === "number" ? activeDeck.deckUrls[firstDeckIndex] : null;
             preloadImage(firstUrl);
             setBackCard(firstUrl);
-            renderTextCard(null);
+            renderTextCard(mode, null, rewardTier);
             setPhenomenonActive(false);
-            lastShownOracleId = "";
+            activeDeck.lastShownOracleId = "";
             lastIdx = idx;
+            setStatus(mode === MODE_BOUNTY ? "Bounty ready" : "Planechase ready");
             return;
           }
 
           const deckIndex = order[idx] ?? 0;
-          const url = deckUrls[deckIndex];
-          const card = filteredCards[deckIndex] || null;
+          const url = activeDeck.deckUrls[deckIndex];
+          const card = activeDeck.filteredCards[deckIndex] || null;
           const nextDeckIndex = order[idx + 1];
           const nextLikelyUrl =
-            typeof nextDeckIndex === "number" ? deckUrls[nextDeckIndex] : null;
+            typeof nextDeckIndex === "number" ? activeDeck.deckUrls[nextDeckIndex] : null;
           preloadImage(nextLikelyUrl);
-          renderTextCard(card);
-          const phenomenonNow = isPhenomenon(card);
-          setPhenomenonActive(phenomenonNow);
-          const shownOracleId =
-            typeof card?.oracle_id === "string" ? card.oracle_id : "";
-          if (shownOracleId !== lastShownOracleId && phenomenonNow) {
-            triggerPhenomenonEffect();
-          }
-          lastShownOracleId = shownOracleId;
+          renderTextCard(mode, card, rewardTier);
 
-          setStatus("idx " + idx + " / " + order.length);
+          if (mode === MODE_PLANECHASE) {
+            const phenomenonNow = isPhenomenon(card);
+            setPhenomenonActive(phenomenonNow);
+            const shownOracleId =
+              typeof card?.oracle_id === "string" ? card.oracle_id : "";
+            if (shownOracleId !== activeDeck.lastShownOracleId && phenomenonNow) {
+              triggerPhenomenonEffect();
+            }
+            activeDeck.lastShownOracleId = shownOracleId;
+          } else {
+            setPhenomenonActive(false);
+          }
+
+          setStatus(
+            mode === MODE_BOUNTY
+              ? `Bounty ${idx} / ${order.length} tier ${rewardTier}`
+              : `idx ${idx} / ${order.length}`,
+          );
 
           if (!currentUrl) {
             setInstant(url);
