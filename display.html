@@ -469,6 +469,8 @@
 
       const BACK_URL =
         "https://backs.scryfall.io/large/7/8/7840c131-f96b-4700-9347-2215c43156e6.jpg";
+      const BOUNTY_BACK_URL =
+        "https://cards.scryfall.io/large/back/a/c/acd27632-4c28-4dc3-90ad-b94fe176b91a.jpg?1712319002";
       const deckState = {
         [MODE_PLANECHASE]: {
           path: "./deck.json",
@@ -773,10 +775,15 @@
         resetClasses();
       }
 
-      function setBackCard(preloadUrl) {
-        topImg.src = BACK_URL;
-        underImg.src = preloadUrl || BACK_URL;
-        currentUrl = BACK_URL;
+      function getBackUrlForMode(mode) {
+        return mode === MODE_BOUNTY ? BOUNTY_BACK_URL : BACK_URL;
+      }
+
+      function setBackCard(mode, preloadUrl) {
+        const backUrl = getBackUrlForMode(mode);
+        topImg.src = backUrl;
+        underImg.src = preloadUrl || backUrl;
+        currentUrl = topImg.src;
         resetClasses();
       }
 
@@ -935,7 +942,7 @@
             const firstUrl =
               typeof firstDeckIndex === "number" ? activeDeck.deckUrls[firstDeckIndex] : null;
             preloadImage(firstUrl);
-            setBackCard(firstUrl);
+            setBackCard(mode, firstUrl);
             renderTextCard(mode, null, rewardTier);
             setPhenomenonActive(false);
             activeDeck.lastShownOracleId = "";
