@@ -270,28 +270,6 @@
         margin-bottom: 10px;
       }
 
-      .tier-list {
-        display: grid;
-        gap: 8px;
-      }
-
-      .tier-item {
-        padding: 10px 12px;
-        border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.08);
-        background: rgba(255,255,255,0.04);
-        color: rgba(255,255,255,0.82);
-        font-size: 15px;
-        line-height: 1.35;
-        text-align: center;
-      }
-
-      .tier-item.active {
-        border-color: rgba(250,204,21,0.75);
-        background: rgba(250,204,21,0.22);
-        color: rgba(255,255,255,0.96);
-      }
-
       .reward-sidebar {
         display: grid;
         gap: 8px;
@@ -550,7 +528,7 @@
     <div class="bounty-hud bounty-hud-left" aria-hidden="true">
       <div class="bounty-panel">
         <div class="bounty-panel-title">Rewards</div>
-        <div id="tierDots" class="tier-list"></div>
+        <div id="tierDots" class="reward-sidebar"></div>
       </div>
     </div>
     <div class="bounty-hud bounty-hud-right" aria-hidden="true">
@@ -776,19 +754,11 @@
         textSecondaryEl.innerHTML = formatRulesTextWithSymbols(card.chaos_effect || "-");
       }
 
-      function renderTierDots(activeTier) {
-        tierDotsEl.innerHTML = BOUNTY_REWARDS.map((_, index) => {
+      function renderSidebarItems(targetEl, items, activeTier, labelPrefix) {
+        targetEl.innerHTML = items.map((content, index) => {
           const tier = index + 1;
           const activeClass = tier === activeTier ? " active" : "";
-          return `<div class="tier-item${activeClass}" aria-label="Tier ${tier}">Tier ${tier}</div>`;
-        }).join("");
-      }
-
-      function renderRewardSidebar(activeTier) {
-        rewardSidebarEl.innerHTML = BOUNTY_REWARDS.map((reward, index) => {
-          const tier = index + 1;
-          const activeClass = tier === activeTier ? " active" : "";
-          return `<div class="reward-sidebar-item${activeClass}"><div class="reward-tier">${tier}.</div><div>${formatRulesTextWithSymbols(reward)}</div></div>`;
+          return `<div class="reward-sidebar-item${activeClass}" aria-label="${labelPrefix} ${tier}"><div class="reward-tier">${tier}.</div><div>${content}</div></div>`;
         }).join("");
       }
 
@@ -806,8 +776,18 @@
           return;
         }
 
-        renderTierDots(activeTier);
-        renderRewardSidebar(activeTier);
+        renderSidebarItems(
+          tierDotsEl,
+          BOUNTY_REWARDS.map((reward) => formatRulesTextWithSymbols(reward)),
+          activeTier,
+          "Reward",
+        );
+        renderSidebarItems(
+          rewardSidebarEl,
+          BOUNTY_REWARDS.map((reward) => formatRulesTextWithSymbols(reward)),
+          activeTier,
+          "Reward",
+        );
         claimTierEl.textContent = "Tier " + activeTier;
         claimRewardEl.innerHTML = formatRulesTextWithSymbols(BOUNTY_REWARDS[activeTier - 1]);
       }
